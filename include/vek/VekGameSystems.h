@@ -94,7 +94,8 @@ public:
 
 // Renderer-agnostic GUI command system. VEK can author sophisticated interfaces,
 // while each host (raylib, SDL, web, editor, etc.) decides how to render them.
-// The vehicle game intentionally does NOT consume this API yet.
+// Hosts can render these commands however they choose. The vehicle game uses
+// this API for its VEK-authored main menu while keeping rendering in raylib/C++.
 enum class GuiCommandType {
     BeginWindow,
     EndWindow,

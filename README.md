@@ -2,7 +2,7 @@
 
 **VEK (Vehicle Engineering Kernel)** is an original C++20 embeddable scripting language created for the Custom Vehicle Game. VEK is independent of raylib and can be used by other C++ programs.
 
-Current version: **1.1.0**
+Current version: **1.2.0**
 
 ## Language features
 
@@ -93,7 +93,7 @@ CMake consumers can link:
 target_link_libraries(MyGame PRIVATE VEK::Runtime)
 ```
 
-## VEK 1.1 game systems
+## VEK 1.2 game systems
 
 Include `<VekGameSystems.h>` for the reusable gravity, health, ragdoll and GUI APIs. `VekRegisterGameplayLibrary(engine)` exposes safe gravity/health/ragdoll helpers directly to `.vek` scripts. `vek::GuiSystem` can expose GUI commands to scripts when a host renderer is ready. See `GAME_SYSTEMS.md` and `examples/gui_blueprint.vek`.
 
@@ -113,3 +113,8 @@ The runtime provides execution, call-depth, native-call, loop and source limits.
 ## License
 
 MIT. See `LICENSE`.
+
+
+## VEK 1.2 Vehicle Editor SDK
+
+VEK now includes Survival/Sandbox game-mode policies, a reusable vehicle-part catalog, build validation/snapping/unlock/cost helpers, and the renderer-neutral GUI command system for host editors and menus. See `EDITOR_SYSTEMS.md`.
