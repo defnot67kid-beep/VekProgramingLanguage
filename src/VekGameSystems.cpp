@@ -145,63 +145,53 @@ bool RagdollSystem::Active(const RagdollState& state) {
     return state.phase != RagdollPhase::Animated;
 }
 
-void GuiSystem::BeginFrame() { commands.clear(); }
-void GuiSystem::EndFrame() {}
-void GuiSystem::SetStyle(const GuiStyle& s) { style = s; }
-const GuiStyle& GuiSystem::GetStyle() const { return style; }
 
-void GuiSystem::BeginWindow(const std::string& id, const std::string& title, GuiRect rect) {
-    commands.push_back({GuiCommandType::BeginWindow,id,title,rect});
-}
-void GuiSystem::EndWindow() { commands.push_back({GuiCommandType::EndWindow}); }
-void GuiSystem::BeginPanel(const std::string& id, GuiRect rect) { commands.push_back({GuiCommandType::BeginPanel,id,"",rect}); }
-void GuiSystem::EndPanel() { commands.push_back({GuiCommandType::EndPanel}); }
-void GuiSystem::Label(const std::string& text, GuiRect rect) { commands.push_back({GuiCommandType::Label,"",text,rect}); }
-
-bool GuiSystem::Button(const std::string& id, const std::string& text, GuiRect rect) {
-    commands.push_back({GuiCommandType::Button,id,text,rect});
-    auto it=pressed.find(id); bool hit=it!=pressed.end() && it->second; if(hit) it->second=false; return hit;
-}
-
-bool GuiSystem::Checkbox(const std::string& id, const std::string& text, bool value, GuiRect rect) {
-    GuiCommand c; c.type=GuiCommandType::Checkbox; c.id=id; c.text=text; c.rect=rect; c.checked=value; commands.push_back(c);
-    auto it=pressed.find(id); if(it!=pressed.end() && it->second){it->second=false; return !value;} return value;
-}
-
-float GuiSystem::Slider(const std::string& id, const std::string& text, float value,
-                        float minValue, float maxValue, GuiRect rect) {
-    auto it=values.find(id); if(it!=values.end()) value=it->second;
-    value=std::clamp(value,minValue,maxValue);
-    GuiCommand c; c.type=GuiCommandType::Slider;c.id=id;c.text=text;c.rect=rect;c.value=value;c.minValue=minValue;c.maxValue=maxValue;commands.push_back(c);
-    return value;
-}
-
-void GuiSystem::ProgressBar(const std::string& id, float value, float minValue, float maxValue, GuiRect rect) {
-    GuiCommand c; c.type=GuiCommandType::ProgressBar;c.id=id;c.rect=rect;c.value=std::clamp(value,minValue,maxValue);c.minValue=minValue;c.maxValue=maxValue;commands.push_back(c);
-}
-
-std::string GuiSystem::TextInput(const std::string& id, const std::string& value, GuiRect rect) {
-    std::string current=value; auto it=texts.find(id); if(it!=texts.end()) current=it->second;
-    GuiCommand c; c.type=GuiCommandType::TextInput;c.id=id;c.text=current;c.rect=rect;commands.push_back(c); return current;
-}
-void GuiSystem::Separator(){commands.push_back({GuiCommandType::Separator});}
-void GuiSystem::Spacer(float amount){GuiCommand c;c.type=GuiCommandType::Spacer;c.value=amount;commands.push_back(c);}
-void GuiSystem::SetPressed(const std::string& id,bool v){pressed[id]=v;}
-void GuiSystem::SetValue(const std::string& id,float v){values[id]=v;}
-void GuiSystem::SetText(const std::string& id,std::string v){texts[id]=std::move(v);}
-const std::vector<GuiCommand>& GuiSystem::Commands() const{return commands;}
-
-void GuiSystem::RegisterNatives(VekScriptEngine& e) {
-    e.RegisterNative("gui_begin_window",[this](const std::vector<VekValue>& a){if(a.size()>=6)BeginWindow(a[0].AsString(),a[1].AsString(),{(float)a[2].AsNumber(),(float)a[3].AsNumber(),(float)a[4].AsNumber(),(float)a[5].AsNumber()});return VekValue();});
-    e.RegisterNative("gui_end_window",[this](const std::vector<VekValue>&){EndWindow();return VekValue();});
-    e.RegisterNative("gui_label",[this](const std::vector<VekValue>& a){if(!a.empty())Label(a[0].AsString());return VekValue();});
-    e.RegisterNative("gui_button",[this](const std::vector<VekValue>& a){if(a.size()<2)return VekValue(false);return VekValue(Button(a[0].AsString(),a[1].AsString()));});
-    e.RegisterNative("gui_checkbox",[this](const std::vector<VekValue>& a){if(a.size()<3)return VekValue(false);return VekValue(Checkbox(a[0].AsString(),a[1].AsString(),a[2].AsBool()));});
-    e.RegisterNative("gui_slider",[this](const std::vector<VekValue>& a){if(a.size()<5)return VekValue(0.0);return VekValue(Slider(a[0].AsString(),a[1].AsString(),(float)a[2].AsNumber(),(float)a[3].AsNumber(),(float)a[4].AsNumber()));});
-    e.RegisterNative("gui_progress",[this](const std::vector<VekValue>& a){if(a.size()>=4)ProgressBar(a[0].AsString(),(float)a[1].AsNumber(),(float)a[2].AsNumber(),(float)a[3].AsNumber());return VekValue();});
-    e.RegisterNative("gui_text_input",[this](const std::vector<VekValue>& a){if(a.size()<2)return VekValue("");return VekValue(TextInput(a[0].AsString(),a[1].AsString()));});
-    e.RegisterNative("gui_separator",[this](const std::vector<VekValue>&){Separator();return VekValue();});
-    e.RegisterNative("gui_spacer",[this](const std::vector<VekValue>& a){Spacer(a.empty()?0.0f:(float)a[0].AsNumber());return VekValue();});
+void GuiSystem::BeginFrame(){commands.clear();}
+void GuiSystem::EndFrame(){}
+void GuiSystem::SetStyle(const GuiStyle&s){style=s;}
+const GuiStyle&GuiSystem::GetStyle()const{return style;}
+void GuiSystem::DefineStyle(const std::string&id,const GuiStyle&s){styles[id]=s;}
+const GuiStyle*GuiSystem::FindStyle(const std::string&id)const{auto it=styles.find(id);return it==styles.end()?nullptr:&it->second;}
+static GuiCommand MakeContainer(GuiCommandType t,const std::string&id,GuiRect r,const std::string&style){GuiCommand c;c.type=t;c.id=id;c.rect=r;c.styleId=style;return c;}
+void GuiSystem::BeginWindow(const std::string&id,const std::string&title,GuiRect r,const std::string&st){auto c=MakeContainer(GuiCommandType::BeginWindow,id,r,st);c.text=title;commands.push_back(std::move(c));}void GuiSystem::EndWindow(){commands.push_back(MakeContainer(GuiCommandType::EndWindow,"",{},""));}
+void GuiSystem::BeginPanel(const std::string&id,GuiRect r,const std::string&st){commands.push_back(MakeContainer(GuiCommandType::BeginPanel,id,r,st));}void GuiSystem::EndPanel(){commands.push_back(MakeContainer(GuiCommandType::EndPanel,"",{},""));}
+void GuiSystem::BeginDockPanel(const std::string&id,GuiRect r,const std::string&st){commands.push_back(MakeContainer(GuiCommandType::BeginDockPanel,id,r,st));}void GuiSystem::EndDockPanel(){commands.push_back(MakeContainer(GuiCommandType::EndDockPanel,"",{},""));}
+void GuiSystem::BeginScrollPanel(const std::string&id,GuiRect r,const std::string&st){commands.push_back(MakeContainer(GuiCommandType::BeginScrollPanel,id,r,st));}void GuiSystem::EndScrollPanel(){commands.push_back(MakeContainer(GuiCommandType::EndScrollPanel,"",{},""));}
+void GuiSystem::BeginGrid(const std::string&id,int cols,GuiRect r,const std::string&st){auto c=MakeContainer(GuiCommandType::BeginGrid,id,r,st);c.columns=std::max(1,cols);commands.push_back(std::move(c));}void GuiSystem::EndGrid(){commands.push_back(MakeContainer(GuiCommandType::EndGrid,"",{},""));}
+void GuiSystem::BeginHorizontal(const std::string&id,const std::string&st){commands.push_back(MakeContainer(GuiCommandType::BeginHorizontal,id,{},st));}void GuiSystem::EndHorizontal(){commands.push_back(MakeContainer(GuiCommandType::EndHorizontal,"",{},""));}
+void GuiSystem::BeginVertical(const std::string&id,const std::string&st){commands.push_back(MakeContainer(GuiCommandType::BeginVertical,id,{},st));}void GuiSystem::EndVertical(){commands.push_back(MakeContainer(GuiCommandType::EndVertical,"",{},""));}
+void GuiSystem::BeginTabs(const std::string&id,const std::vector<std::string>&items,const std::string&st){auto c=MakeContainer(GuiCommandType::BeginTabs,id,{},st);c.items=items;commands.push_back(std::move(c));}void GuiSystem::EndTabs(){commands.push_back(MakeContainer(GuiCommandType::EndTabs,"",{},""));}
+void GuiSystem::BeginTree(const std::string&id,const std::string&label,const std::string&st){auto c=MakeContainer(GuiCommandType::BeginTree,id,{},st);c.text=label;commands.push_back(std::move(c));}void GuiSystem::EndTree(){commands.push_back(MakeContainer(GuiCommandType::EndTree,"",{},""));}
+void GuiSystem::BeginList(const std::string&id,const std::string&st){commands.push_back(MakeContainer(GuiCommandType::BeginList,id,{},st));}void GuiSystem::EndList(){commands.push_back(MakeContainer(GuiCommandType::EndList,"",{},""));}
+void GuiSystem::BeginContextMenu(const std::string&id,GuiRect r,const std::string&st){commands.push_back(MakeContainer(GuiCommandType::BeginContextMenu,id,r,st));}void GuiSystem::EndContextMenu(){commands.push_back(MakeContainer(GuiCommandType::EndContextMenu,"",{},""));}
+void GuiSystem::BeginPropertyGrid(const std::string&id,const std::string&st){commands.push_back(MakeContainer(GuiCommandType::BeginPropertyGrid,id,{},st));}void GuiSystem::EndPropertyGrid(){commands.push_back(MakeContainer(GuiCommandType::EndPropertyGrid,"",{},""));}
+void GuiSystem::Label(const std::string&t,GuiRect r,const std::string&st){GuiCommand c;c.type=GuiCommandType::Label;c.text=t;c.rect=r;c.styleId=st;commands.push_back(std::move(c));}
+bool GuiSystem::Button(const std::string&id,const std::string&t,GuiRect r,const std::string&st){GuiCommand c;c.type=GuiCommandType::Button;c.id=id;c.text=t;c.rect=r;c.styleId=st;commands.push_back(c);auto it=pressed.find(id);bool hit=it!=pressed.end()&&it->second;if(hit)it->second=false;return hit;}
+bool GuiSystem::ImageButton(const std::string&id,const std::string&img,const std::string&t,GuiRect r,const std::string&st){GuiCommand c;c.type=GuiCommandType::ImageButton;c.id=id;c.aux=img;c.text=t;c.rect=r;c.styleId=st;commands.push_back(c);auto it=pressed.find(id);bool hit=it!=pressed.end()&&it->second;if(hit)it->second=false;return hit;}
+bool GuiSystem::Checkbox(const std::string&id,const std::string&t,bool v,GuiRect r,const std::string&st){GuiCommand c;c.type=GuiCommandType::Checkbox;c.id=id;c.text=t;c.rect=r;c.checked=v;c.styleId=st;commands.push_back(c);auto it=pressed.find(id);if(it!=pressed.end()&&it->second){it->second=false;return !v;}return v;}
+float GuiSystem::Slider(const std::string&id,const std::string&t,float v,float lo,float hi,GuiRect r,const std::string&st){auto it=values.find(id);if(it!=values.end())v=it->second;v=std::clamp(v,lo,hi);GuiCommand c;c.type=GuiCommandType::Slider;c.id=id;c.text=t;c.rect=r;c.value=v;c.minValue=lo;c.maxValue=hi;c.styleId=st;commands.push_back(c);return v;}
+void GuiSystem::ProgressBar(const std::string&id,float v,float lo,float hi,GuiRect r,const std::string&st){GuiCommand c;c.type=GuiCommandType::ProgressBar;c.id=id;c.rect=r;c.value=std::clamp(v,lo,hi);c.minValue=lo;c.maxValue=hi;c.styleId=st;commands.push_back(c);}
+std::string GuiSystem::TextInput(const std::string&id,const std::string&v,GuiRect r,const std::string&st){std::string cur=v;auto it=texts.find(id);if(it!=texts.end())cur=it->second;GuiCommand c;c.type=GuiCommandType::TextInput;c.id=id;c.text=cur;c.rect=r;c.styleId=st;commands.push_back(c);return cur;}
+std::string GuiSystem::SearchBox(const std::string&id,const std::string&v,GuiRect r,const std::string&st){std::string cur=v;auto it=texts.find(id);if(it!=texts.end())cur=it->second;GuiCommand c;c.type=GuiCommandType::SearchBox;c.id=id;c.text=cur;c.rect=r;c.styleId=st;commands.push_back(c);return cur;}
+int GuiSystem::ComboBox(const std::string&id,const std::vector<std::string>&items,int idx,GuiRect r,const std::string&st){auto it=indices.find(id);if(it!=indices.end())idx=it->second;if(items.empty())idx=-1;else idx=std::clamp(idx,0,(int)items.size()-1);GuiCommand c;c.type=GuiCommandType::ComboBox;c.id=id;c.items=items;c.value=(float)idx;c.rect=r;c.styleId=st;commands.push_back(c);return idx;}
+int GuiSystem::Dropdown(const std::string&id,const std::vector<std::string>&items,int idx,GuiRect r,const std::string&st){auto it=indices.find(id);if(it!=indices.end())idx=it->second;if(items.empty())idx=-1;else idx=std::clamp(idx,0,(int)items.size()-1);GuiCommand c;c.type=GuiCommandType::Dropdown;c.id=id;c.items=items;c.value=(float)idx;c.rect=r;c.styleId=st;commands.push_back(c);return idx;}
+void GuiSystem::Tooltip(const std::string&id,const std::string&t){GuiCommand c;c.type=GuiCommandType::Tooltip;c.id=id;c.text=t;commands.push_back(std::move(c));}void GuiSystem::Separator(){commands.push_back(MakeContainer(GuiCommandType::Separator,"",{},""));}void GuiSystem::Spacer(float a){GuiCommand c;c.type=GuiCommandType::Spacer;c.value=a;commands.push_back(c);}void GuiSystem::SetPressed(const std::string&id,bool v){pressed[id]=v;}void GuiSystem::SetValue(const std::string&id,float v){values[id]=v;}void GuiSystem::SetText(const std::string&id,std::string v){texts[id]=std::move(v);}void GuiSystem::SetIndex(const std::string&id,int i){indices[id]=i;}const std::vector<GuiCommand>&GuiSystem::Commands()const{return commands;}
+static std::vector<std::string> GuiItems(const VekValue&v){std::vector<std::string>o;if(auto*a=v.AsArray())for(auto&x:*a)o.push_back(x.AsString());return o;}
+static GuiStyle StyleFromMap(const VekValue&v,GuiStyle s={}){if(!v.IsMap())return s;s.padding=(float)v.Get("padding").AsNumber(s.padding);s.cornerRadius=(float)v.Get("corner_radius").AsNumber(s.cornerRadius);s.spacing=(float)v.Get("spacing").AsNumber(s.spacing);s.opacity=(float)v.Get("opacity").AsNumber(s.opacity);auto col=[&](const char*k,GuiColor&c){auto x=v.Get(k);if(x.IsMap()){c.r=(float)x.Get("r").AsNumber(c.r);c.g=(float)x.Get("g").AsNumber(c.g);c.b=(float)x.Get("b").AsNumber(c.b);c.a=(float)x.Get("a").AsNumber(c.a);}};col("background",s.background);col("foreground",s.foreground);col("accent",s.accent);col("border",s.border);return s;}
+void GuiSystem::RegisterNatives(VekScriptEngine&e){
+ e.RegisterNative("gui_define_style",[this](const std::vector<VekValue>&a){if(a.size()>=2)DefineStyle(a[0].AsString(),StyleFromMap(a[1],style));return VekValue();});
+ e.RegisterNative("gui_begin_window",[this](const std::vector<VekValue>&a){if(a.size()>=2)BeginWindow(a[0].AsString(),a[1].AsString(),{},a.size()>2?a[2].AsString():"");return VekValue();});e.RegisterNative("gui_end_window",[this](const std::vector<VekValue>&){EndWindow();return VekValue();});
+ e.RegisterNative("gui_begin_panel",[this](const std::vector<VekValue>&a){BeginPanel(a.empty()?"panel":a[0].AsString(),{},a.size()>1?a[1].AsString():"");return VekValue();});e.RegisterNative("gui_end_panel",[this](const std::vector<VekValue>&){EndPanel();return VekValue();});
+ e.RegisterNative("gui_begin_dock",[this](const std::vector<VekValue>&a){BeginDockPanel(a.empty()?"dock":a[0].AsString());return VekValue();});e.RegisterNative("gui_end_dock",[this](const std::vector<VekValue>&){EndDockPanel();return VekValue();});
+ e.RegisterNative("gui_begin_scroll",[this](const std::vector<VekValue>&a){BeginScrollPanel(a.empty()?"scroll":a[0].AsString());return VekValue();});e.RegisterNative("gui_end_scroll",[this](const std::vector<VekValue>&){EndScrollPanel();return VekValue();});
+ e.RegisterNative("gui_begin_grid",[this](const std::vector<VekValue>&a){BeginGrid(a.empty()?"grid":a[0].AsString(),a.size()>1?(int)a[1].AsNumber(1):1);return VekValue();});e.RegisterNative("gui_end_grid",[this](const std::vector<VekValue>&){EndGrid();return VekValue();});
+ e.RegisterNative("gui_begin_horizontal",[this](const std::vector<VekValue>&a){BeginHorizontal(a.empty()?"row":a[0].AsString());return VekValue();});e.RegisterNative("gui_end_horizontal",[this](const std::vector<VekValue>&){EndHorizontal();return VekValue();});
+ e.RegisterNative("gui_begin_vertical",[this](const std::vector<VekValue>&a){BeginVertical(a.empty()?"column":a[0].AsString());return VekValue();});e.RegisterNative("gui_end_vertical",[this](const std::vector<VekValue>&){EndVertical();return VekValue();});
+ e.RegisterNative("gui_begin_tabs",[this](const std::vector<VekValue>&a){BeginTabs(a.empty()?"tabs":a[0].AsString(),a.size()>1?GuiItems(a[1]):std::vector<std::string>{});return VekValue();});e.RegisterNative("gui_end_tabs",[this](const std::vector<VekValue>&){EndTabs();return VekValue();});
+ e.RegisterNative("gui_begin_tree",[this](const std::vector<VekValue>&a){BeginTree(a.empty()?"tree":a[0].AsString(),a.size()>1?a[1].AsString():"");return VekValue();});e.RegisterNative("gui_end_tree",[this](const std::vector<VekValue>&){EndTree();return VekValue();});
+ e.RegisterNative("gui_begin_list",[this](const std::vector<VekValue>&a){BeginList(a.empty()?"list":a[0].AsString());return VekValue();});e.RegisterNative("gui_end_list",[this](const std::vector<VekValue>&){EndList();return VekValue();});
+ e.RegisterNative("gui_begin_property_grid",[this](const std::vector<VekValue>&a){BeginPropertyGrid(a.empty()?"props":a[0].AsString());return VekValue();});e.RegisterNative("gui_end_property_grid",[this](const std::vector<VekValue>&){EndPropertyGrid();return VekValue();});
+ e.RegisterNative("gui_label",[this](const std::vector<VekValue>&a){if(!a.empty())Label(a[0].AsString(),{},a.size()>1?a[1].AsString():"");return VekValue();});e.RegisterNative("gui_button",[this](const std::vector<VekValue>&a){return VekValue(a.size()>=2&&Button(a[0].AsString(),a[1].AsString(),{},a.size()>2?a[2].AsString():""));});e.RegisterNative("gui_image_button",[this](const std::vector<VekValue>&a){return VekValue(a.size()>=3&&ImageButton(a[0].AsString(),a[1].AsString(),a[2].AsString()));});e.RegisterNative("gui_checkbox",[this](const std::vector<VekValue>&a){return VekValue(a.size()>=3&&Checkbox(a[0].AsString(),a[1].AsString(),a[2].AsBool()));});e.RegisterNative("gui_slider",[this](const std::vector<VekValue>&a){return VekValue(a.size()>=5?Slider(a[0].AsString(),a[1].AsString(),(float)a[2].AsNumber(),(float)a[3].AsNumber(),(float)a[4].AsNumber()):0.0);});e.RegisterNative("gui_progress",[this](const std::vector<VekValue>&a){if(a.size()>=4)ProgressBar(a[0].AsString(),(float)a[1].AsNumber(),(float)a[2].AsNumber(),(float)a[3].AsNumber());return VekValue();});e.RegisterNative("gui_text_input",[this](const std::vector<VekValue>&a){return VekValue(a.size()>=2?TextInput(a[0].AsString(),a[1].AsString()):"");});e.RegisterNative("gui_search_box",[this](const std::vector<VekValue>&a){return VekValue(a.size()>=2?SearchBox(a[0].AsString(),a[1].AsString()):"");});e.RegisterNative("gui_combo",[this](const std::vector<VekValue>&a){return VekValue(a.size()>=3?ComboBox(a[0].AsString(),GuiItems(a[1]),(int)a[2].AsNumber()):-1);});e.RegisterNative("gui_dropdown",[this](const std::vector<VekValue>&a){return VekValue(a.size()>=3?Dropdown(a[0].AsString(),GuiItems(a[1]),(int)a[2].AsNumber()):-1);});e.RegisterNative("gui_tooltip",[this](const std::vector<VekValue>&a){if(a.size()>=2)Tooltip(a[0].AsString(),a[1].AsString());return VekValue();});e.RegisterNative("gui_separator",[this](const std::vector<VekValue>&){Separator();return VekValue();});e.RegisterNative("gui_spacer",[this](const std::vector<VekValue>&a){Spacer(a.empty()?0.0f:(float)a[0].AsNumber());return VekValue();});
 }
 
 void VekRegisterGameplayLibrary(VekScriptEngine& e) {

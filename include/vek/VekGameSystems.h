@@ -1,181 +1,37 @@
 #pragma once
-
 #include <cstdint>
 #include <string>
 #include <unordered_map>
 #include <vector>
-
+#include <vek/VekScriptEngine.h>
 class VekScriptEngine;
-
 namespace vek {
+struct GravitySettings{float acceleration=15.5f,terminalFallSpeed=32.0f,groundedVelocity=0.0f;};
+struct GravityState{float verticalVelocity=0,airborneTime=0,lastLandingSpeed=0;bool grounded=true;};
+class GravitySystem{public:static bool BeginJump(GravityState&,float);static bool Step(GravityState&,const GravitySettings&,float,float,float&);};
+struct HealthSettings{float maxHealth=100,hurtThreshold=0.35f;};struct HealthState{float health=100;bool alive=true;};
+class HealthSystem{public:static void Reset(HealthState&,const HealthSettings&);static float ApplyDamage(HealthState&,const HealthSettings&,float);static float Heal(HealthState&,const HealthSettings&,float);static void SetHealth(HealthState&,const HealthSettings&,float);static float Normalized(const HealthState&,const HealthSettings&);static bool IsHurt(const HealthState&,const HealthSettings&);};
+enum class RagdollPhase{Animated,Ragdoll,Recovering};
+struct RagdollSettings{float minimumImpactSpeed=13,fatalImpactSpeed=25,minimumDuration=0.8f,maximumDuration=3,linearDamping=3.2f,angularDamping=4.4f,recoveryDuration=0.65f;};
+struct RagdollState{RagdollPhase phase=RagdollPhase::Animated;float time=0,targetDuration=0,blend=0,pitch=0,roll=0,yawOffset=0,pitchVelocity=0,rollVelocity=0,yawVelocity=0,bodyDrop=0,armSpread=0,legSpread=0;};
+class RagdollSystem{public:static bool ShouldTrigger(float,float,float,const RagdollSettings&);static void Trigger(RagdollState&,float,float,const RagdollSettings&);static void Update(RagdollState&,float,const RagdollSettings&);static void BeginRecovery(RagdollState&,const RagdollSettings&);static bool Active(const RagdollState&);};
 
-struct GravitySettings {
-    float acceleration = 15.5f;
-    float terminalFallSpeed = 32.0f;
-    float groundedVelocity = 0.0f;
+enum class GuiCommandType{
+ BeginWindow,EndWindow,BeginPanel,EndPanel,BeginDockPanel,EndDockPanel,BeginScrollPanel,EndScrollPanel,BeginGrid,EndGrid,BeginHorizontal,EndHorizontal,BeginVertical,EndVertical,BeginTabs,EndTabs,BeginTree,EndTree,BeginList,EndList,BeginContextMenu,EndContextMenu,BeginPropertyGrid,EndPropertyGrid,
+ Label,Button,ImageButton,Checkbox,Slider,ProgressBar,TextInput,SearchBox,ComboBox,Dropdown,Tooltip,Separator,Spacer
 };
-
-struct GravityState {
-    float verticalVelocity = 0.0f;
-    float airborneTime = 0.0f;
-    float lastLandingSpeed = 0.0f;
-    bool grounded = true;
-};
-
-class GravitySystem {
+struct GuiRect{float x=0,y=0,width=0,height=0;};
+struct GuiColor{float r=0,g=0,b=0,a=255;};
+struct GuiStyle{float scale=1,opacity=1,cornerRadius=8,padding=10,spacing=6;GuiColor background{18,27,33,245},foreground{235,242,244,255},accent{57,174,188,255},border{74,102,110,255};};
+struct GuiCommand{GuiCommandType type=GuiCommandType::Label;std::string id,text,styleId,aux;GuiRect rect;float value=0,minValue=0,maxValue=1;bool checked=false,enabled=true;int columns=1;std::vector<std::string>items;};
+class GuiSystem{
 public:
-    static bool BeginJump(GravityState& state, float jumpSpeed);
-    static bool Step(GravityState& state, const GravitySettings& settings,
-                     float deltaTime, float groundY, float& worldY);
+ void BeginFrame();void EndFrame();void SetStyle(const GuiStyle&);const GuiStyle&GetStyle()const;void DefineStyle(const std::string&,const GuiStyle&);const GuiStyle*FindStyle(const std::string&)const;
+ void BeginWindow(const std::string&,const std::string&,GuiRect={},const std::string&style={});void EndWindow();void BeginPanel(const std::string&,GuiRect={},const std::string&style={});void EndPanel();
+ void BeginDockPanel(const std::string&,GuiRect={},const std::string&style={});void EndDockPanel();void BeginScrollPanel(const std::string&,GuiRect={},const std::string&style={});void EndScrollPanel();void BeginGrid(const std::string&,int columns,GuiRect={},const std::string&style={});void EndGrid();void BeginHorizontal(const std::string&,const std::string&style={});void EndHorizontal();void BeginVertical(const std::string&,const std::string&style={});void EndVertical();void BeginTabs(const std::string&,const std::vector<std::string>&,const std::string&style={});void EndTabs();void BeginTree(const std::string&,const std::string&,const std::string&style={});void EndTree();void BeginList(const std::string&,const std::string&style={});void EndList();void BeginContextMenu(const std::string&,GuiRect={},const std::string&style={});void EndContextMenu();void BeginPropertyGrid(const std::string&,const std::string&style={});void EndPropertyGrid();
+ void Label(const std::string&,GuiRect={},const std::string&style={});bool Button(const std::string&,const std::string&,GuiRect={},const std::string&style={});bool ImageButton(const std::string&,const std::string&,const std::string&,GuiRect={},const std::string&style={});bool Checkbox(const std::string&,const std::string&,bool,GuiRect={},const std::string&style={});float Slider(const std::string&,const std::string&,float,float,float,GuiRect={},const std::string&style={});void ProgressBar(const std::string&,float,float,float,GuiRect={},const std::string&style={});std::string TextInput(const std::string&,const std::string&,GuiRect={},const std::string&style={});std::string SearchBox(const std::string&,const std::string&,GuiRect={},const std::string&style={});int ComboBox(const std::string&,const std::vector<std::string>&,int,GuiRect={},const std::string&style={});int Dropdown(const std::string&,const std::vector<std::string>&,int,GuiRect={},const std::string&style={});void Tooltip(const std::string&,const std::string&);void Separator();void Spacer(float);
+ void SetPressed(const std::string&,bool);void SetValue(const std::string&,float);void SetText(const std::string&,std::string);void SetIndex(const std::string&,int);const std::vector<GuiCommand>&Commands()const;void RegisterNatives(VekScriptEngine&);
+private:GuiStyle style;std::unordered_map<std::string,GuiStyle>styles;std::vector<GuiCommand>commands;std::unordered_map<std::string,bool>pressed;std::unordered_map<std::string,float>values;std::unordered_map<std::string,std::string>texts;std::unordered_map<std::string,int>indices;
 };
-
-struct HealthSettings {
-    float maxHealth = 100.0f;
-    float hurtThreshold = 0.35f;
-};
-
-struct HealthState {
-    float health = 100.0f;
-    bool alive = true;
-};
-
-class HealthSystem {
-public:
-    static void Reset(HealthState& state, const HealthSettings& settings);
-    static float ApplyDamage(HealthState& state, const HealthSettings& settings, float amount);
-    static float Heal(HealthState& state, const HealthSettings& settings, float amount);
-    static void SetHealth(HealthState& state, const HealthSettings& settings, float value);
-    static float Normalized(const HealthState& state, const HealthSettings& settings);
-    static bool IsHurt(const HealthState& state, const HealthSettings& settings);
-};
-
-enum class RagdollPhase {
-    Animated,
-    Ragdoll,
-    Recovering
-};
-
-struct RagdollSettings {
-    float minimumImpactSpeed = 13.0f;
-    float fatalImpactSpeed = 25.0f;
-    float minimumDuration = 0.8f;
-    float maximumDuration = 3.0f;
-    float linearDamping = 3.2f;
-    float angularDamping = 4.4f;
-    float recoveryDuration = 0.65f;
-};
-
-struct RagdollState {
-    RagdollPhase phase = RagdollPhase::Animated;
-    float time = 0.0f;
-    float targetDuration = 0.0f;
-    float blend = 0.0f;
-    float pitch = 0.0f;
-    float roll = 0.0f;
-    float yawOffset = 0.0f;
-    float pitchVelocity = 0.0f;
-    float rollVelocity = 0.0f;
-    float yawVelocity = 0.0f;
-    float bodyDrop = 0.0f;
-    float armSpread = 0.0f;
-    float legSpread = 0.0f;
-};
-
-class RagdollSystem {
-public:
-    static bool ShouldTrigger(float health, float impactSpeed, float damage,
-                              const RagdollSettings& settings);
-    static void Trigger(RagdollState& state, float impactSpeed, float directionSign,
-                        const RagdollSettings& settings);
-    static void Update(RagdollState& state, float deltaTime, const RagdollSettings& settings);
-    static void BeginRecovery(RagdollState& state, const RagdollSettings& settings);
-    static bool Active(const RagdollState& state);
-};
-
-// Renderer-agnostic GUI command system. VEK can author sophisticated interfaces,
-// while each host (raylib, SDL, web, editor, etc.) decides how to render them.
-// Hosts can render these commands however they choose. The vehicle game uses
-// this API for its VEK-authored main menu while keeping rendering in raylib/C++.
-enum class GuiCommandType {
-    BeginWindow,
-    EndWindow,
-    BeginPanel,
-    EndPanel,
-    Label,
-    Button,
-    Checkbox,
-    Slider,
-    ProgressBar,
-    TextInput,
-    Separator,
-    Spacer
-};
-
-struct GuiRect {
-    float x = 0.0f;
-    float y = 0.0f;
-    float width = 0.0f;
-    float height = 0.0f;
-};
-
-struct GuiCommand {
-    GuiCommandType type = GuiCommandType::Label;
-    std::string id;
-    std::string text;
-    GuiRect rect;
-    float value = 0.0f;
-    float minValue = 0.0f;
-    float maxValue = 1.0f;
-    bool checked = false;
-    bool enabled = true;
-};
-
-struct GuiStyle {
-    float scale = 1.0f;
-    float opacity = 1.0f;
-    float cornerRadius = 8.0f;
-    float padding = 10.0f;
-};
-
-class GuiSystem {
-public:
-    void BeginFrame();
-    void EndFrame();
-    void SetStyle(const GuiStyle& style);
-    const GuiStyle& GetStyle() const;
-
-    void BeginWindow(const std::string& id, const std::string& title, GuiRect rect);
-    void EndWindow();
-    void BeginPanel(const std::string& id, GuiRect rect);
-    void EndPanel();
-    void Label(const std::string& text, GuiRect rect = {});
-    bool Button(const std::string& id, const std::string& text, GuiRect rect = {});
-    bool Checkbox(const std::string& id, const std::string& text, bool value, GuiRect rect = {});
-    float Slider(const std::string& id, const std::string& text, float value,
-                 float minValue, float maxValue, GuiRect rect = {});
-    void ProgressBar(const std::string& id, float value, float minValue,
-                     float maxValue, GuiRect rect = {});
-    std::string TextInput(const std::string& id, const std::string& value, GuiRect rect = {});
-    void Separator();
-    void Spacer(float amount);
-
-    void SetPressed(const std::string& id, bool pressed);
-    void SetValue(const std::string& id, float value);
-    void SetText(const std::string& id, std::string value);
-
-    const std::vector<GuiCommand>& Commands() const;
-    void RegisterNatives(VekScriptEngine& engine);
-
-private:
-    GuiStyle style;
-    std::vector<GuiCommand> commands;
-    std::unordered_map<std::string, bool> pressed;
-    std::unordered_map<std::string, float> values;
-    std::unordered_map<std::string, std::string> texts;
-};
-
-// Safe gameplay-oriented helpers exposed to VEK scripts. They are pure helpers
-// and do not grant filesystem, process, network, or raw-memory access.
-void VekRegisterGameplayLibrary(VekScriptEngine& engine);
-
+void VekRegisterGameplayLibrary(VekScriptEngine&engine);
 } // namespace vek

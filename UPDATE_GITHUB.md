@@ -1,24 +1,21 @@
-# Push VEK 1.1 to your GitHub repository
+# Update your VEK GitHub repository to 1.2.0
 
 Repository:
+`https://github.com/defnot67kid-beep/VekProgramingLanguage.git`
 
-```text
-https://github.com/defnot67kid-beep/VekProgramingLanguage.git
-```
-
-Copy/extract this ZIP into your local repository folder, then run:
+Replace/update your local repository files using this VEK 1.2 ZIP, then run:
 
 ```bash
 git add .
-git commit -m "VEK 1.1 gravity health ragdoll and GUI systems"
+git commit -m "VEK 1.2 vehicle editor and game mode systems"
 git push origin main
 ```
 
-After testing the game successfully, create the release tag:
+Create the exact tag used by game v12:
 
 ```bash
-git tag v1.1.0
-git push origin v1.1.0
+git tag v1.2.0
+git push origin v1.2.0
 ```
 
-Do not push private game signing keys. The standalone VEK repository does not need them.
+If the tag already exists and points to an older commit, do not silently overwrite a public release tag. Create a new version such as `v1.2.1` and change the game's `VEK_GITHUB_TAG.txt` to match.
