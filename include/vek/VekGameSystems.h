@@ -16,6 +16,82 @@ struct RagdollSettings{float minimumImpactSpeed=13,fatalImpactSpeed=25,minimumDu
 struct RagdollState{RagdollPhase phase=RagdollPhase::Animated;float time=0,targetDuration=0,blend=0,pitch=0,roll=0,yawOffset=0,pitchVelocity=0,rollVelocity=0,yawVelocity=0,bodyDrop=0,armSpread=0,legSpread=0;};
 class RagdollSystem{public:static bool ShouldTrigger(float,float,float,const RagdollSettings&);static void Trigger(RagdollState&,float,float,const RagdollSettings&);static void Update(RagdollState&,float,const RagdollSettings&);static void BeginRecovery(RagdollState&,const RagdollSettings&);static bool Active(const RagdollState&);};
 
+
+struct AnimationMarker {
+    std::string name;
+    float time=0.0f;
+    VekValue data;
+};
+struct AnimationDefinition {
+    std::string id;
+    float duration=1.0f;
+    float speed=1.0f;
+    float blendIn=0.12f;
+    float blendOut=0.12f;
+    bool loop=false;
+    std::vector<std::string> tags;
+    std::vector<AnimationMarker> markers;
+};
+struct AnimationPlaybackState {
+    std::string clipId;
+    float time=0.0f;
+    float normalizedTime=0.0f;
+    int loopCount=0;
+    bool playing=false;
+    bool finished=false;
+};
+class AnimationLibrary {
+public:
+    bool RegisterAnimation(const AnimationDefinition& definition);
+    bool RegisterAnimationValue(const VekValue& definition,std::string* error=nullptr);
+    const AnimationDefinition* Find(const std::string& id) const;
+    void Clear();
+    std::size_t Size() const;
+    void RegisterNatives(VekScriptEngine& engine);
+private:
+    std::unordered_map<std::string,AnimationDefinition> clips;
+};
+class AnimationSystem {
+public:
+    static bool Play(AnimationPlaybackState& state,const AnimationDefinition& clip,bool restart=true);
+    static void Stop(AnimationPlaybackState& state);
+    static void Update(AnimationPlaybackState& state,const AnimationDefinition& clip,float dt);
+    static bool PassedMarker(const AnimationPlaybackState& previous,const AnimationPlaybackState& current,const AnimationDefinition& clip,const std::string& marker);
+};
+
+struct ProximityPromptDefinition {
+    std::string id;
+    std::string actionText="Interact";
+    std::string objectText;
+    std::string inputKey="E";
+    float maxDistance=3.5f;
+    float holdDuration=0.0f;
+    bool enabled=true;
+    bool requiresLineOfSight=false;
+    int priority=0;
+};
+struct ProximityPromptState {
+    bool visible=false;
+    bool activated=false;
+    float distance=0.0f;
+    float holdProgress=0.0f;
+};
+class ProximityPromptRegistry {
+public:
+    bool RegisterPrompt(const ProximityPromptDefinition& definition);
+    bool RegisterPromptValue(const VekValue& definition,std::string* error=nullptr);
+    const ProximityPromptDefinition* Find(const std::string& id) const;
+    void Clear();
+    std::size_t Size() const;
+    void RegisterNatives(VekScriptEngine& engine);
+private:
+    std::unordered_map<std::string,ProximityPromptDefinition> prompts;
+};
+class ProximityPromptSystem {
+public:
+    static bool Update(ProximityPromptState& state,const ProximityPromptDefinition& definition,float distance,bool inputDown,bool inputPressed,float dt);
+};
+
 enum class GuiCommandType{
  BeginWindow,EndWindow,BeginPanel,EndPanel,BeginDockPanel,EndDockPanel,BeginScrollPanel,EndScrollPanel,BeginGrid,EndGrid,BeginHorizontal,EndHorizontal,BeginVertical,EndVertical,BeginTabs,EndTabs,BeginTree,EndTree,BeginList,EndList,BeginContextMenu,EndContextMenu,BeginPropertyGrid,EndPropertyGrid,
  Label,Button,ImageButton,Checkbox,Slider,ProgressBar,TextInput,SearchBox,ComboBox,Dropdown,Tooltip,Separator,Spacer

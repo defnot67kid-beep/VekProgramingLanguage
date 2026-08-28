@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.22)
-project(VEK VERSION 1.3.0 LANGUAGES C CXX)
+project(VEK VERSION 1.4.0 LANGUAGES C CXX)
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
@@ -55,6 +55,10 @@ if(VEK_BUILD_TESTS)
     add_executable(vek_v13_tests tests/v13_language_tests.cpp)
     target_link_libraries(vek_v13_tests PRIVATE VEK::Runtime)
     add_test(NAME vek_v13_features COMMAND vek_v13_tests)
+
+    add_executable(vek_interaction_systems_tests tests/interaction_systems_tests.cpp)
+    target_link_libraries(vek_interaction_systems_tests PRIVATE VEK::Runtime)
+    add_test(NAME vek_animation_prompts COMMAND vek_interaction_systems_tests)
 
     if(VEK_BUILD_C_ABI)
         add_executable(vek_c_api_tests tests/c_api_tests.c)

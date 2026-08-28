@@ -118,3 +118,8 @@ MIT. See `LICENSE`.
 ## VEK 1.2 Vehicle Editor SDK
 
 VEK now includes Survival/Sandbox game-mode policies, a reusable vehicle-part catalog, build validation/snapping/unlock/cost helpers, and the renderer-neutral GUI command system for host editors and menus. See `EDITOR_SYSTEMS.md`.
+
+
+## Animation & proximity prompts (1.4)
+
+VEK 1.4 can define safe animation metadata and proximity prompts without receiving renderer, GPU, input-device or native-pointer access. Hosts register the `AnimationLibrary` and `ProximityPromptRegistry`, then translate those definitions into their own character/door/UI systems. See `examples/animation_prompts.vek`.

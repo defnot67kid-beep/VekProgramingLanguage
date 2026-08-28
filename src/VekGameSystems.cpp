@@ -146,6 +146,91 @@ bool RagdollSystem::Active(const RagdollState& state) {
 }
 
 
+
+bool AnimationLibrary::RegisterAnimation(const AnimationDefinition& d) {
+    if (d.id.empty() || !std::isfinite(d.duration) || d.duration <= 0.0f || !std::isfinite(d.speed) || d.speed <= 0.0f)
+        return false;
+    AnimationDefinition clean=d;
+    clean.duration=std::clamp(clean.duration,0.01f,3600.0f);
+    clean.speed=std::clamp(clean.speed,0.01f,100.0f);
+    clean.blendIn=std::clamp(clean.blendIn,0.0f,10.0f);
+    clean.blendOut=std::clamp(clean.blendOut,0.0f,10.0f);
+    for(auto& marker:clean.markers) marker.time=std::clamp(marker.time,0.0f,clean.duration);
+    clips[clean.id]=std::move(clean);
+    return true;
+}
+bool AnimationLibrary::RegisterAnimationValue(const VekValue& v,std::string* error) {
+    if(!v.IsMap()){if(error)*error="animation_register expects a map";return false;}
+    AnimationDefinition d;
+    d.id=v.Get("id").AsString();
+    d.duration=(float)v.Get("duration").AsNumber(1.0);
+    d.speed=(float)v.Get("speed").AsNumber(1.0);
+    d.blendIn=(float)v.Get("blend_in").AsNumber(0.12);
+    d.blendOut=(float)v.Get("blend_out").AsNumber(0.12);
+    d.loop=v.Get("loop").AsBool(false);
+    if(auto tags=v.Get("tags").AsArray()) for(const auto& x:*tags) if(x.IsString()) d.tags.push_back(x.AsString());
+    if(auto markers=v.Get("markers").AsArray()) for(const auto& x:*markers) if(x.IsMap()){
+        AnimationMarker m; m.name=x.Get("name").AsString(); m.time=(float)x.Get("time").AsNumber(); m.data=x.Get("data");
+        if(!m.name.empty()) d.markers.push_back(std::move(m));
+    }
+    if(!RegisterAnimation(d)){if(error)*error="invalid animation definition";return false;}
+    if(error)error->clear();return true;
+}
+const AnimationDefinition* AnimationLibrary::Find(const std::string& id) const {auto it=clips.find(id);return it==clips.end()?nullptr:&it->second;}
+void AnimationLibrary::Clear(){clips.clear();}
+std::size_t AnimationLibrary::Size() const{return clips.size();}
+void AnimationLibrary::RegisterNatives(VekScriptEngine& e){
+    e.RegisterNative("animation_register",[this](const std::vector<VekValue>& a){std::string er;return VekValue(!a.empty()&&RegisterAnimationValue(a[0],&er));});
+    e.RegisterNative("animation_exists",[this](const std::vector<VekValue>& a){return VekValue(!a.empty()&&Find(a[0].AsString())!=nullptr);});
+    e.RegisterNative("animation_duration",[this](const std::vector<VekValue>& a){auto*d=a.empty()?nullptr:Find(a[0].AsString());return VekValue(d?d->duration:0.0f);});
+}
+bool AnimationSystem::Play(AnimationPlaybackState& s,const AnimationDefinition& clip,bool restart){
+    if(!restart&&s.playing&&s.clipId==clip.id)return false;
+    s.clipId=clip.id;s.time=0;s.normalizedTime=0;s.loopCount=0;s.playing=true;s.finished=false;return true;
+}
+void AnimationSystem::Stop(AnimationPlaybackState& s){s.playing=false;s.finished=true;}
+void AnimationSystem::Update(AnimationPlaybackState& s,const AnimationDefinition& clip,float dt){
+    if(!s.playing||s.clipId!=clip.id)return;
+    float duration=std::max(0.01f,clip.duration),step=std::clamp(dt,0.0f,0.1f)*std::max(0.01f,clip.speed);
+    s.time+=step;
+    if(clip.loop){
+        while(s.time>=duration){s.time-=duration;++s.loopCount;}
+    }else if(s.time>=duration){s.time=duration;s.playing=false;s.finished=true;}
+    s.normalizedTime=std::clamp(s.time/duration,0.0f,1.0f);
+}
+bool AnimationSystem::PassedMarker(const AnimationPlaybackState& before,const AnimationPlaybackState& after,const AnimationDefinition& clip,const std::string& marker){
+    for(const auto&m:clip.markers)if(m.name==marker){
+        if(after.loopCount>before.loopCount)return before.time<=m.time||after.time>=m.time;
+        return before.time<m.time&&after.time>=m.time;
+    }
+    return false;
+}
+
+bool ProximityPromptRegistry::RegisterPrompt(const ProximityPromptDefinition& d){
+    if(d.id.empty()||d.actionText.empty()||!std::isfinite(d.maxDistance)||d.maxDistance<=0.0f)return false;
+    ProximityPromptDefinition clean=d;clean.maxDistance=std::clamp(clean.maxDistance,0.1f,100.0f);clean.holdDuration=std::clamp(clean.holdDuration,0.0f,30.0f);prompts[clean.id]=std::move(clean);return true;
+}
+bool ProximityPromptRegistry::RegisterPromptValue(const VekValue&v,std::string*error){
+    if(!v.IsMap()){if(error)*error="prompt_register expects a map";return false;}
+    ProximityPromptDefinition d;d.id=v.Get("id").AsString();d.actionText=v.Get("action_text").AsString();d.objectText=v.Get("object_text").AsString();d.inputKey=v.Get("input_key").AsString();if(d.inputKey.empty())d.inputKey="E";d.maxDistance=(float)v.Get("max_distance").AsNumber(3.5);d.holdDuration=(float)v.Get("hold_duration").AsNumber(0.0);auto enabledValue=v.Get("enabled");d.enabled=enabledValue.IsNil()?true:enabledValue.AsBool();auto losValue=v.Get("requires_line_of_sight");d.requiresLineOfSight=losValue.IsNil()?false:losValue.AsBool();d.priority=(int)v.Get("priority").AsNumber(0);
+    if(!RegisterPrompt(d)){if(error)*error="invalid proximity prompt definition";return false;}if(error)error->clear();return true;
+}
+const ProximityPromptDefinition* ProximityPromptRegistry::Find(const std::string&id)const{auto it=prompts.find(id);return it==prompts.end()?nullptr:&it->second;}
+void ProximityPromptRegistry::Clear(){prompts.clear();}
+std::size_t ProximityPromptRegistry::Size()const{return prompts.size();}
+void ProximityPromptRegistry::RegisterNatives(VekScriptEngine&e){
+    e.RegisterNative("prompt_register",[this](const std::vector<VekValue>&a){std::string er;return VekValue(!a.empty()&&RegisterPromptValue(a[0],&er));});
+    e.RegisterNative("prompt_exists",[this](const std::vector<VekValue>&a){return VekValue(!a.empty()&&Find(a[0].AsString())!=nullptr);});
+    e.RegisterNative("prompt_max_distance",[this](const std::vector<VekValue>&a){auto*d=a.empty()?nullptr:Find(a[0].AsString());return VekValue(d?d->maxDistance:0.0f);});
+}
+bool ProximityPromptSystem::Update(ProximityPromptState&s,const ProximityPromptDefinition&d,float distance,bool inputDown,bool inputPressed,float dt){
+    s.distance=std::max(0.0f,distance);s.activated=false;s.visible=d.enabled&&s.distance<=d.maxDistance;
+    if(!s.visible){s.holdProgress=0;return false;}
+    if(d.holdDuration<=0.0f){if(inputPressed){s.activated=true;return true;}return false;}
+    if(inputDown)s.holdProgress=std::min(d.holdDuration,s.holdProgress+std::clamp(dt,0.0f,0.1f));else s.holdProgress=0.0f;
+    if(s.holdProgress>=d.holdDuration){s.activated=true;s.holdProgress=0;return true;}return false;
+}
+
 void GuiSystem::BeginFrame(){commands.clear();}
 void GuiSystem::EndFrame(){}
 void GuiSystem::SetStyle(const GuiStyle&s){style=s;}
