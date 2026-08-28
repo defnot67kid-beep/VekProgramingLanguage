@@ -33,13 +33,45 @@ int main(){
     assert(vek::ProximityPromptSystem::Update(ps,*pd,2.0f,true,true,0.016f));
     assert(ps.activated);
 
+    vek::GarageDoorRegistry garages;
+    VekValue garage=VekValue::Map();
+    garage.Set("id","hangar.main"); garage.Set("width",24.0); garage.Set("height",8.0);
+    garage.Set("panel_count",8); garage.Set("starts_locked",true); garage.Set("open_duration",2.0);
+    assert(garages.RegisterGarageValue(garage,&error));
+    const auto* gd=garages.Find("hangar.main"); assert(gd);
+    vek::GarageDoorState gs; vek::GarageDoorSystem::Reset(gs,*gd);
+    assert(!vek::GarageDoorSystem::RequestOpen(gs,*gd,false));
+    assert(vek::GarageDoorSystem::RequestOpen(gs,*gd,true));
+    for(int i=0;i<25;++i) vek::GarageDoorSystem::Update(gs,*gd,0.1f);
+    assert(gs.openFraction>0.99f);
+
+    vek::PasslockRegistry locks;
+    VekValue lock=VekValue::Map();
+    lock.Set("id","hangar.access"); lock.Set("display_name","Engineering Access");
+    lock.Set("code","2580"); lock.Set("garage_id","hangar.main"); lock.Set("max_attempts",3);
+    assert(locks.RegisterPasslockValue(lock,&error));
+    const auto* ld=locks.Find("hangar.access"); assert(ld);
+    vek::PasslockState ls;
+    assert(vek::PasslockSystem::Submit(ls,*ld,"1111")==vek::PasslockResult::Denied);
+    assert(vek::PasslockSystem::Submit(ls,*ld,"2580")==vek::PasslockResult::Granted);
+
+    vek::GuiSystem gui; gui.BeginFrame(); gui.BeginModal("access","GARAGE ACCESS");
+    gui.PasswordInput("pin","****"); gui.StatusBadge("status","READY","neutral");
+    gui.Keypad("pad",{"1","2","3","4","5","6","7","8","9","CLEAR","0","ENTER"}); gui.EndModal(); gui.EndFrame();
+    bool sawModal=false,sawPassword=false,sawKeypad=false;
+    for(const auto&c:gui.Commands()){sawModal|=c.type==vek::GuiCommandType::BeginModal;sawPassword|=c.type==vek::GuiCommandType::PasswordInput;sawKeypad|=c.type==vek::GuiCommandType::Keypad;}
+    assert(sawModal&&sawPassword&&sawKeypad);
+
     VekScriptEngine vm; VekRegisterStandardLibrary(vm);
-    animations.RegisterNatives(vm); prompts.RegisterNatives(vm);
+    animations.RegisterNatives(vm); prompts.RegisterNatives(vm); garages.RegisterNatives(vm); locks.RegisterNatives(vm); gui.RegisterNatives(vm);
     assert(vm.LoadSource(R"(
       fn setup(){
         animation_register({id:"walk.to.door",duration:2.0,loop:false});
         prompt_register({id:"door.prompt",action_text:"Open",object_text:"Door",input_key:"E",max_distance:4});
-        return animation_duration("walk.to.door") + prompt_max_distance("door.prompt");
+        garage_register({id:"garage.script",width:18,height:7,panel_count:7,starts_locked:true});
+        passlock_register({id:"lock.script",code:"2468",garage_id:"garage.script"});
+        gui_begin_modal("lock","ACCESS"); gui_password_input("pin","****"); gui_status_badge("state","LOCKED","warning"); gui_end_modal();
+        return animation_duration("walk.to.door") + prompt_max_distance("door.prompt") + garage_open_duration("garage.script") + passlock_max_digits("lock.script");
       }
     )","interaction_test.vek"));
     auto value=vm.Call("setup");

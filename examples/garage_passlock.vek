@@ -1,0 +1,11 @@
+fn setup() {
+    animation_register({id:"garage.open",duration:2.5,loop:false,tags:["garage"]});
+    garage_register({id:"garage.main",width:20,height:7,panel_count:8,starts_locked:true,open_animation:"garage.open"});
+    passlock_register({id:"garage.access",code:"2580",garage_id:"garage.main",max_attempts:5,lockout_seconds:10});
+    gui_begin_modal("access","GARAGE ACCESS");
+    gui_password_input("pin","****");
+    gui_status_badge("state","LOCKED","warning");
+    gui_keypad("pad",["1","2","3","4","5","6","7","8","9","CLEAR","0","ENTER"]);
+    gui_end_modal();
+    return true;
+}

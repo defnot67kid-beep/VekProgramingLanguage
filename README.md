@@ -2,7 +2,7 @@
 
 **VEK (Vehicle Engineering Kernel)** is an original C++20 embeddable scripting language created for the Custom Vehicle Game. VEK is independent of raylib and can be used by other C++ programs.
 
-Current version: **1.2.0**
+Current version: **1.5.0**
 
 ## Language features
 
@@ -25,9 +25,9 @@ Current version: **1.2.0**
 - sealed native-function registry
 - CLI, REPL and syntax checker
 - gameplay SDK: gravity, health and procedural ragdoll foundations
-- advanced renderer-agnostic GUI command system (windows, panels, buttons, sliders, checkboxes, progress bars and text input)
+- advanced renderer-agnostic GUI command system (windows, modals, panels, buttons, sliders, checkboxes, progress bars, password fields, status badges and keypad commands)
 
-VEK is a complete small scripting-language core, designed to grow with the game. Future versions can add collections, modules, bytecode and tooling without changing the embedding concept.
+VEK is a growing embeddable scripting-language core. It now includes arrays/maps, modules, structs/events, a stable C ABI, multi-language binding foundations, editor/gameplay systems, animations, proximity prompts, garage/access-control primitives and renderer-neutral GUI commands.
 
 ## Build
 
@@ -123,3 +123,28 @@ VEK now includes Survival/Sandbox game-mode policies, a reusable vehicle-part ca
 ## Animation & proximity prompts (1.4)
 
 VEK 1.4 can define safe animation metadata and proximity prompts without receiving renderer, GPU, input-device or native-pointer access. Hosts register the `AnimationLibrary` and `ProximityPromptRegistry`, then translate those definitions into their own character/door/UI systems. See `examples/animation_prompts.vek`.
+
+
+## Garage doors, passlocks and access UI (1.5)
+
+VEK 1.5 adds safe reusable `GarageDoorRegistry`, `GarageDoorSystem`, `PasslockRegistry` and `PasslockSystem` types. A signed VEK script can define segmented garage timing, animation IDs, lock policy, auto-close timing and an access keypad without receiving raw pointers, filesystem access, GPU access or operating-system APIs.
+
+New GUI commands include modal windows, password fields, status badges and keypad descriptions. Native hosts remain responsible for rendering and actual input handling.
+
+```vek
+garage_register({
+    id: "hangar.main",
+    width: 24,
+    height: 8.5,
+    panel_count: 9,
+    starts_locked: true,
+    open_animation: "hangar.garage_open"
+});
+
+passlock_register({
+    id: "hangar.access",
+    code: "2580",
+    garage_id: "hangar.main",
+    max_attempts: 5
+});
+```
