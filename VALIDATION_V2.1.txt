@@ -1,0 +1,16 @@
+VEK 2.1.0 portable validation
+Date: 2026-08-29
+
+Local Linux Release validation performed on the updated source tree:
+- CMake configure: PASS
+- Release build: PASS
+- 7/7 CTest tests: PASS
+- vek --version: PASS (2.1.0)
+- vek info/home discovery: PASS
+- vek doctor: PASS
+- vek check examples/hello.vek: PASS
+- vek run examples/hello.vek: PASS
+- portable manifest verification: PASS
+- deliberate VERSION corruption detected by vek verify: PASS
+
+The Windows portable binary itself is intentionally produced by the included GitHub Actions Windows 2022 release workflow (or BUILD_PORTABLE_WINDOWS.bat on a Windows development machine). This Linux environment cannot validate the final MSVC-produced vek.exe directly.

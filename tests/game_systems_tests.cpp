@@ -1,5 +1,8 @@
 #include <VekScriptEngine.h>
 #include <VekGameSystems.h>
+#ifdef NDEBUG
+#undef NDEBUG
+#endif
 #include <cassert>
 #include <cmath>
 #include <iostream>

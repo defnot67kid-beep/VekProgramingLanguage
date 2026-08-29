@@ -1,5 +1,8 @@
 #include <vek/VekScriptEngine.h>
 #include <vek/VekEditorSystems.h>
+#ifdef NDEBUG
+#undef NDEBUG
+#endif
 #include <cassert>
 #include <filesystem>
 #include <fstream>

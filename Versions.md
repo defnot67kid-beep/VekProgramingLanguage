@@ -1,4 +1,17 @@
-# VEK Versions
+# VEK Version History
+
+## VEK 2.1.0
+
+Portable/relocatable release foundation:
+
+- official Windows portable ZIP generation
+- installation-root discovery based on the running `vek.exe`
+- no hard-coded install directory and no required `VEK_HOME`
+- `vek home`, `vek info`, `vek doctor`, and `vek verify` commands
+- one-click User PATH helper (`INSTALL_PATH.cmd`) and clean removal helper
+- static MSVC runtime option for a more self-contained Windows CLI
+- GitHub Actions release workflow that builds the portable package and SHA-256 manifest
+- Git clone/source builds remain fully supported
 
 ## VEK 2.0.0
 

@@ -4,7 +4,7 @@
 
 VEK started as the secure gameplay scripting language for the Custom Vehicle Game, but the runtime is designed to be usable by other applications as well. It keeps one canonical language/runtime implementation and exposes safe host APIs instead of requiring every host language to reimplement VEK.
 
-Current version: **2.0.0**
+Current version: **2.1.0**
 
 ## What VEK is designed for
 
@@ -154,6 +154,20 @@ let engine = {
 println(wheels[1]);
 println(engine.power);
 ```
+
+## Portable Windows release
+
+VEK 2.1 adds a relocatable Windows distribution. Normal users do not need Git, CMake or a traditional installer. Download the Windows portable ZIP, extract it anywhere (for example `C:\vek`), run `INSTALL_PATH.cmd`, open a new terminal, then run:
+
+```bat
+vek --version
+vek info
+vek doctor
+```
+
+The folder can be renamed or moved. VEK discovers its home from `vek.exe`; `VEK_HOME` is optional. `vek verify` validates package files against the release-generated local SHA-256 manifest. See `docs/PORTABLE_INSTALL.md`.
+
+Release details are in `RELEASE_NOTES_V2.1.0.md`.
 
 ## Build
 

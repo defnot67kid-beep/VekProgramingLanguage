@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.22)
-project(VEK VERSION 2.0.0 LANGUAGES C CXX)
+project(VEK VERSION 2.1.0 LANGUAGES C CXX)
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
@@ -8,6 +8,11 @@ set(CMAKE_C_STANDARD 11)
 option(VEK_BUILD_CLI "Build the vek command-line executable" ON)
 option(VEK_BUILD_TESTS "Build VEK tests" ON)
 option(VEK_BUILD_C_ABI "Build the stable C ABI shared library" ON)
+option(VEK_PORTABLE_STATIC_MSVC_RUNTIME "Use the static MSVC runtime for portable Windows builds" OFF)
+
+if(MSVC AND VEK_PORTABLE_STATIC_MSVC_RUNTIME)
+    set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
+endif()
 
 add_library(vek_runtime STATIC
     src/VekScriptEngine.cpp
@@ -75,10 +80,18 @@ endif()
 include(GNUInstallDirs)
 install(TARGETS vek_runtime EXPORT VEKTargets ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR})
 if(VEK_BUILD_C_ABI)
-  install(TARGETS vek_c LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR} RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
+  install(TARGETS vek_c
+    ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
+    LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+    RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
 endif()
 if(VEK_BUILD_CLI)
   install(TARGETS vek_cli RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
 endif()
 install(DIRECTORY include/ DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
 install(EXPORT VEKTargets FILE VEKTargets.cmake NAMESPACE VEK:: DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/VEK)
+
+# Files installed for relocatable/portable distributions.
+install(FILES VERSION LICENSE README.md PORTABLE_RELEASE.md INSTALL_PATH.cmd UNINSTALL_PATH.cmd BUILD_PORTABLE_WINDOWS.bat DESTINATION .)
+install(DIRECTORY examples/ DESTINATION examples)
+install(DIRECTORY docs/ DESTINATION docs)
