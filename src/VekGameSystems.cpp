@@ -235,11 +235,11 @@ bool ProximityPromptSystem::Update(ProximityPromptState&s,const ProximityPromptD
 
 bool GarageDoorRegistry::RegisterGarage(const GarageDoorDefinition&d){
     if(d.id.empty()||!std::isfinite(d.width)||!std::isfinite(d.height)||d.width<1.0f||d.height<1.0f)return false;
-    GarageDoorDefinition c=d;c.width=std::clamp(c.width,1.0f,80.0f);c.height=std::clamp(c.height,1.0f,30.0f);c.panelCount=std::clamp(c.panelCount,2,32);c.openDuration=std::clamp(c.openDuration,0.15f,30.0f);c.closeDuration=std::clamp(c.closeDuration,0.15f,30.0f);c.autoCloseDelay=std::clamp(c.autoCloseDelay,0.0f,300.0f);c.insideOpenDistance=std::clamp(c.insideOpenDistance,0.5f,30.0f);garages[c.id]=std::move(c);return true;
+    GarageDoorDefinition c=d;c.width=std::clamp(c.width,1.0f,80.0f);c.height=std::clamp(c.height,1.0f,30.0f);c.panelCount=std::clamp(c.panelCount,2,32);c.openDuration=std::clamp(c.openDuration,0.15f,30.0f);c.closeDuration=std::clamp(c.closeDuration,0.15f,30.0f);c.autoCloseDelay=std::clamp(c.autoCloseDelay,0.0f,300.0f);c.insideOpenDistance=std::clamp(c.insideOpenDistance,0.5f,30.0f);c.panelOverlap=std::clamp(c.panelOverlap,0.0f,0.15f);c.sideSealWidth=std::clamp(c.sideSealWidth,0.10f,1.0f);c.lintelHeight=std::clamp(c.lintelHeight,0.10f,2.0f);c.collisionClearFraction=std::clamp(c.collisionClearFraction,0.25f,0.95f);garages[c.id]=std::move(c);return true;
 }
 bool GarageDoorRegistry::RegisterGarageValue(const VekValue&v,std::string*error){
     if(!v.IsMap()){if(error)*error="garage_register expects a map";return false;}
-    GarageDoorDefinition d;d.id=v.Get("id").AsString();d.displayName=v.Get("display_name").AsString();if(d.displayName.empty())d.displayName="Garage Door";d.width=(float)v.Get("width").AsNumber(24.0);d.height=(float)v.Get("height").AsNumber(8.0);d.panelCount=(int)v.Get("panel_count").AsNumber(8);d.openDuration=(float)v.Get("open_duration").AsNumber(2.6);d.closeDuration=(float)v.Get("close_duration").AsNumber(2.3);d.autoCloseDelay=(float)v.Get("auto_close_delay").AsNumber(8.0);auto sl=v.Get("starts_locked");d.startsLocked=sl.IsNil()?true:sl.AsBool();auto ac=v.Get("auto_close");d.autoClose=ac.IsNil()?true:ac.AsBool();auto ie=v.Get("allow_inside_egress");d.allowInsideEgress=ie.IsNil()?true:ie.AsBool();d.insideOpenDistance=(float)v.Get("inside_open_distance").AsNumber(6.0);auto ho=v.Get("hold_open_near_door");d.holdOpenNearDoor=ho.IsNil()?true:ho.AsBool();d.openAnimation=v.Get("open_animation").AsString();d.closeAnimation=v.Get("close_animation").AsString();d.accessId=v.Get("access_id").AsString();if(!RegisterGarage(d)){if(error)*error="invalid garage door definition";return false;}if(error)error->clear();return true;
+    GarageDoorDefinition d;d.id=v.Get("id").AsString();d.displayName=v.Get("display_name").AsString();if(d.displayName.empty())d.displayName="Garage Door";d.width=(float)v.Get("width").AsNumber(24.0);d.height=(float)v.Get("height").AsNumber(8.0);d.panelCount=(int)v.Get("panel_count").AsNumber(8);d.openDuration=(float)v.Get("open_duration").AsNumber(2.6);d.closeDuration=(float)v.Get("close_duration").AsNumber(2.3);d.autoCloseDelay=(float)v.Get("auto_close_delay").AsNumber(8.0);auto sl=v.Get("starts_locked");d.startsLocked=sl.IsNil()?true:sl.AsBool();auto ac=v.Get("auto_close");d.autoClose=ac.IsNil()?true:ac.AsBool();auto ie=v.Get("allow_inside_egress");d.allowInsideEgress=ie.IsNil()?true:ie.AsBool();d.insideOpenDistance=(float)v.Get("inside_open_distance").AsNumber(6.0);auto ho=v.Get("hold_open_near_door");d.holdOpenNearDoor=ho.IsNil()?true:ho.AsBool();d.panelOverlap=(float)v.Get("panel_overlap").AsNumber(d.panelOverlap);d.sideSealWidth=(float)v.Get("side_seal_width").AsNumber(d.sideSealWidth);d.lintelHeight=(float)v.Get("lintel_height").AsNumber(d.lintelHeight);d.collisionClearFraction=(float)v.Get("collision_clear_fraction").AsNumber(d.collisionClearFraction);d.openAnimation=v.Get("open_animation").AsString();d.closeAnimation=v.Get("close_animation").AsString();d.accessId=v.Get("access_id").AsString();if(!RegisterGarage(d)){if(error)*error="invalid garage door definition";return false;}if(error)error->clear();return true;
 }
 const GarageDoorDefinition*GarageDoorRegistry::Find(const std::string&id)const{auto it=garages.find(id);return it==garages.end()?nullptr:&it->second;}
 void GarageDoorRegistry::Clear(){garages.clear();}std::size_t GarageDoorRegistry::Size()const{return garages.size();}
@@ -258,6 +258,99 @@ void PasslockRegistry::RegisterNatives(VekScriptEngine&e){e.RegisterNative("pass
 void PasslockSystem::Reset(PasslockState&s){s={};}void PasslockSystem::Update(PasslockState&s,float dt){s.lockoutRemaining=std::max(0.0f,s.lockoutRemaining-std::clamp(dt,0.0f,0.1f));if(s.lockoutRemaining<=0&&s.failedAttempts<0)s.failedAttempts=0;}
 PasslockResult PasslockSystem::Submit(PasslockState&s,const PasslockDefinition&d,const std::string&code){if(s.lockoutRemaining>0)return PasslockResult::LockedOut;if((int)code.size()<d.minDigits||(int)code.size()>d.maxDigits)return PasslockResult::InvalidInput;for(char ch:code)if(!std::isdigit((unsigned char)ch))return PasslockResult::InvalidInput;if(code==d.accessCode){s.granted=true;s.failedAttempts=0;s.lockoutRemaining=0;return PasslockResult::Granted;}s.granted=false;++s.failedAttempts;if(s.failedAttempts>=d.maxAttempts){s.failedAttempts=0;s.lockoutRemaining=d.lockoutSeconds;return PasslockResult::LockedOut;}return PasslockResult::Denied;}
 
+
+
+// -----------------------------------------------------------------------------
+// VEK 1.7 lifecycle / presentation metadata systems
+// -----------------------------------------------------------------------------
+bool AudioCueRegistry::RegisterCue(const AudioCueDefinition& d){
+    if(d.id.empty()||d.assetId.empty())return false;
+    AudioCueDefinition c=d;c.volume=std::clamp(c.volume,0.0f,1.0f);c.pitch=std::clamp(c.pitch,0.25f,4.0f);
+    cues[c.id]=std::move(c);return true;
+}
+bool AudioCueRegistry::RegisterCueValue(const VekValue&v,std::string*error){
+    if(!v.IsMap()){if(error)*error="audio_cue_register expects a map";return false;}
+    AudioCueDefinition d;d.id=v.Get("id").AsString();d.assetId=v.Get("asset").AsString();d.volume=(float)v.Get("volume").AsNumber(1.0);d.pitch=(float)v.Get("pitch").AsNumber(1.0);
+    if(d.assetId.find("..")!=std::string::npos||(!d.assetId.empty()&&d.assetId[0]=='/')){if(error)*error="unsafe audio asset id";return false;}
+    if(!RegisterCue(d)){if(error)*error="invalid audio cue definition";return false;}if(error)error->clear();return true;
+}
+const AudioCueDefinition*AudioCueRegistry::Find(const std::string&id)const{auto it=cues.find(id);return it==cues.end()?nullptr:&it->second;}
+void AudioCueRegistry::Clear(){cues.clear();}std::size_t AudioCueRegistry::Size()const{return cues.size();}
+void AudioCueRegistry::RegisterNatives(VekScriptEngine&e){
+    e.RegisterNative("audio_cue_register",[this](const std::vector<VekValue>&a){std::string er;return VekValue(!a.empty()&&RegisterCueValue(a[0],&er));});
+    e.RegisterNative("audio_cue_exists",[this](const std::vector<VekValue>&a){return VekValue(!a.empty()&&Find(a[0].AsString())!=nullptr);});
+}
+
+bool ScreenEffectRegistry::RegisterEffect(const ScreenEffectDefinition& d){
+    if(d.id.empty())return false;ScreenEffectDefinition c=d;
+    c.duration=std::clamp(c.duration,0.05f,30.0f);c.fadeIn=std::clamp(c.fadeIn,0.0f,c.duration);c.hold=std::clamp(c.hold,0.0f,c.duration);c.fadeOut=std::clamp(c.fadeOut,0.0f,c.duration);
+    c.tint.r=std::clamp(c.tint.r,0.0f,255.0f);c.tint.g=std::clamp(c.tint.g,0.0f,255.0f);c.tint.b=std::clamp(c.tint.b,0.0f,255.0f);c.tint.a=std::clamp(c.tint.a,0.0f,255.0f);
+    c.vignette=std::clamp(c.vignette,0.0f,1.0f);c.spatter=std::clamp(c.spatter,0.0f,1.0f);c.pulse=std::clamp(c.pulse,0.0f,1.0f);effects[c.id]=std::move(c);return true;
+}
+bool ScreenEffectRegistry::RegisterEffectValue(const VekValue&v,std::string*error){
+    if(!v.IsMap()){if(error)*error="screen_effect_register expects a map";return false;}
+    ScreenEffectDefinition d;d.id=v.Get("id").AsString();d.duration=(float)v.Get("duration").AsNumber(d.duration);d.fadeIn=(float)v.Get("fade_in").AsNumber(d.fadeIn);d.hold=(float)v.Get("hold").AsNumber(d.hold);d.fadeOut=(float)v.Get("fade_out").AsNumber(d.fadeOut);d.vignette=(float)v.Get("vignette").AsNumber(d.vignette);d.spatter=(float)v.Get("spatter").AsNumber(d.spatter);d.pulse=(float)v.Get("pulse").AsNumber(d.pulse);
+    auto tint=v.Get("tint");if(tint.IsMap()){d.tint.r=(float)tint.Get("r").AsNumber(d.tint.r);d.tint.g=(float)tint.Get("g").AsNumber(d.tint.g);d.tint.b=(float)tint.Get("b").AsNumber(d.tint.b);d.tint.a=(float)tint.Get("a").AsNumber(d.tint.a);}
+    if(!RegisterEffect(d)){if(error)*error="invalid screen effect definition";return false;}if(error)error->clear();return true;
+}
+const ScreenEffectDefinition*ScreenEffectRegistry::Find(const std::string&id)const{auto it=effects.find(id);return it==effects.end()?nullptr:&it->second;}
+void ScreenEffectRegistry::Clear(){effects.clear();}std::size_t ScreenEffectRegistry::Size()const{return effects.size();}
+void ScreenEffectRegistry::RegisterNatives(VekScriptEngine&e){
+    e.RegisterNative("screen_effect_register",[this](const std::vector<VekValue>&a){std::string er;return VekValue(!a.empty()&&RegisterEffectValue(a[0],&er));});
+    e.RegisterNative("screen_effect_exists",[this](const std::vector<VekValue>&a){return VekValue(!a.empty()&&Find(a[0].AsString())!=nullptr);});
+}
+void ScreenEffectSystem::Start(ScreenEffectState&s){s={};s.active=true;}
+void ScreenEffectSystem::Stop(ScreenEffectState&s){s={};}
+void ScreenEffectSystem::Update(ScreenEffectState&s,const ScreenEffectDefinition&d,float dt){
+    if(!s.active)return;s.time+=ClampDt(dt);float t=s.time;float alpha=1.0f;
+    if(d.fadeIn>0&&t<d.fadeIn)alpha=t/d.fadeIn;
+    float fadeStart=std::max(d.fadeIn,d.duration-d.fadeOut);
+    if(d.fadeOut>0&&t>fadeStart)alpha=std::min(alpha,std::max(0.0f,(d.duration-t)/d.fadeOut));
+    if(d.pulse>0)alpha*=1.0f-d.pulse*0.16f*(0.5f+0.5f*std::sin(t*10.0f));
+    s.opacity=std::clamp(alpha,0.0f,1.0f);if(t>=d.duration){s.active=false;s.opacity=0.0f;}
+}
+
+bool DeathSequenceRegistry::RegisterSequence(const DeathSequenceDefinition&d){
+    if(d.id.empty())return false;DeathSequenceDefinition c=d;c.ragdollImpact=std::clamp(c.ragdollImpact,1.0f,200.0f);c.ragdollDuration=std::clamp(c.ragdollDuration,0.1f,10.0f);c.screenDelay=std::clamp(c.screenDelay,0.0f,10.0f);c.audioDelay=std::clamp(c.audioDelay,0.0f,10.0f);c.respawnDelay=std::clamp(c.respawnDelay,0.2f,30.0f);sequences[c.id]=std::move(c);return true;
+}
+bool DeathSequenceRegistry::RegisterSequenceValue(const VekValue&v,std::string*error){
+    if(!v.IsMap()){if(error)*error="death_sequence_register expects a map";return false;}
+    DeathSequenceDefinition d;d.id=v.Get("id").AsString();d.ragdollImpact=(float)v.Get("ragdoll_impact").AsNumber(d.ragdollImpact);d.ragdollDuration=(float)v.Get("ragdoll_duration").AsNumber(d.ragdollDuration);d.screenDelay=(float)v.Get("screen_delay").AsNumber(d.screenDelay);d.audioDelay=(float)v.Get("audio_delay").AsNumber(d.audioDelay);d.respawnDelay=(float)v.Get("respawn_delay").AsNumber(d.respawnDelay);d.screenEffectId=v.Get("screen_effect").AsString();d.audioCueId=v.Get("audio_cue").AsString();
+    if(!RegisterSequence(d)){if(error)*error="invalid death sequence definition";return false;}if(error)error->clear();return true;
+}
+const DeathSequenceDefinition*DeathSequenceRegistry::Find(const std::string&id)const{auto it=sequences.find(id);return it==sequences.end()?nullptr:&it->second;}
+void DeathSequenceRegistry::Clear(){sequences.clear();}std::size_t DeathSequenceRegistry::Size()const{return sequences.size();}
+void DeathSequenceRegistry::RegisterNatives(VekScriptEngine&e){
+    e.RegisterNative("death_sequence_register",[this](const std::vector<VekValue>&a){std::string er;return VekValue(!a.empty()&&RegisterSequenceValue(a[0],&er));});
+    e.RegisterNative("death_sequence_exists",[this](const std::vector<VekValue>&a){return VekValue(!a.empty()&&Find(a[0].AsString())!=nullptr);});
+}
+void DeathSequenceSystem::Begin(DeathSequenceState&s){s={};s.active=true;}
+DeathSequenceEvents DeathSequenceSystem::Update(DeathSequenceState&s,const DeathSequenceDefinition&d,float dt){
+    DeathSequenceEvents ev;if(!s.active)return ev;s.time+=ClampDt(dt);
+    if(!s.screenStarted&&s.time>=d.screenDelay){s.screenStarted=true;ev.startScreen=true;}
+    if(!s.audioPlayed&&s.time>=d.audioDelay){s.audioPlayed=true;ev.playAudio=true;}
+    if(!s.respawnIssued&&s.time>=d.respawnDelay){s.respawnIssued=true;ev.respawn=true;s.active=false;}
+    return ev;
+}
+void DeathSequenceSystem::Cancel(DeathSequenceState&s){s={};}
+
+bool GroundingRegistry::RegisterProfile(const GroundingProfile&d){
+    if(d.id.empty())return false;GroundingProfile c=d;c.rootOffsetPerHeight=std::clamp(c.rootOffsetPerHeight,0.0f,1.0f);c.minimumRootOffset=std::clamp(c.minimumRootOffset,0.0f,2.0f);c.maximumRootOffset=std::clamp(c.maximumRootOffset,c.minimumRootOffset,3.0f);c.snapTolerance=std::clamp(c.snapTolerance,0.0f,1.0f);profiles[c.id]=std::move(c);return true;
+}
+bool GroundingRegistry::RegisterProfileValue(const VekValue&v,std::string*error){
+    if(!v.IsMap()){if(error)*error="grounding_register expects a map";return false;}
+    GroundingProfile d;d.id=v.Get("id").AsString();d.rootOffsetPerHeight=(float)v.Get("root_offset_per_height").AsNumber(d.rootOffsetPerHeight);d.minimumRootOffset=(float)v.Get("min_root_offset").AsNumber(d.minimumRootOffset);d.maximumRootOffset=(float)v.Get("max_root_offset").AsNumber(d.maximumRootOffset);d.snapTolerance=(float)v.Get("snap_tolerance").AsNumber(d.snapTolerance);
+    if(!RegisterProfile(d)){if(error)*error="invalid grounding profile";return false;}if(error)error->clear();return true;
+}
+const GroundingProfile*GroundingRegistry::Find(const std::string&id)const{auto it=profiles.find(id);return it==profiles.end()?nullptr:&it->second;}
+void GroundingRegistry::Clear(){profiles.clear();}std::size_t GroundingRegistry::Size()const{return profiles.size();}
+void GroundingRegistry::RegisterNatives(VekScriptEngine&e){
+    e.RegisterNative("grounding_register",[this](const std::vector<VekValue>&a){std::string er;return VekValue(!a.empty()&&RegisterProfileValue(a[0],&er));});
+    e.RegisterNative("grounding_exists",[this](const std::vector<VekValue>&a){return VekValue(!a.empty()&&Find(a[0].AsString())!=nullptr);});
+}
+float GroundingSystem::RootYForSurface(float surfaceY,float avatarHeight,const GroundingProfile&p){
+    float offset=std::clamp(std::max(0.1f,avatarHeight)*p.rootOffsetPerHeight,p.minimumRootOffset,p.maximumRootOffset);return surfaceY+offset;
+}
 
 static std::vector<std::string> WrapGuiText(const std::string& text,float fontSize,float width,const GuiMeasureTextFn& measure){
     std::vector<std::string> lines;

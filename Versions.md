@@ -5,6 +5,25 @@ This file is the single version history for VEK. New release notes and feature a
 ---
 
 
+## VEK 1.7.0
+
+### Lifecycle effects, audio cues, death sequences and grounding
+
+VEK 1.7 adds reusable host-safe presentation/lifecycle systems while keeping rendering, audio devices and filesystem access native.
+
+New features:
+
+- `AudioCueRegistry` and safe cue metadata (`asset`, volume and pitch)
+- traversal-safe audio asset identifiers; VEK never opens files itself
+- `ScreenEffectRegistry` / `ScreenEffectSystem` with tint, fade, vignette, pulse and spatter intensity metadata
+- `DeathSequenceRegistry` / `DeathSequenceSystem` with ragdoll, screen-effect, audio and respawn timing
+- one-shot lifecycle events (`startScreen`, `playAudio`, `respawn`) for native hosts
+- `GroundingRegistry` / `GroundingSystem` for avatar-height-aware feet-to-surface alignment
+- grounding offsets, clamps and snap policy can be authored in `.vek`
+- all new registries expose only safe IDs/data, never raw pointers, GPU/audio handles or unrestricted filesystem access
+
+---
+
 ## VEK 1.6.0
 
 ### Responsive GUI layout and physical interaction policy

@@ -108,6 +108,10 @@ struct GarageDoorDefinition {
     bool allowInsideEgress=true;
     float insideOpenDistance=6.0f;
     bool holdOpenNearDoor=true;
+    float panelOverlap=0.025f;
+    float sideSealWidth=0.34f;
+    float lintelHeight=0.68f;
+    float collisionClearFraction=0.72f;
     std::string openAnimation;
     std::string closeAnimation;
     std::string accessId;
@@ -184,6 +188,126 @@ public:
     static void Reset(PasslockState& state);
     static void Update(PasslockState& state,float dt);
     static PasslockResult Submit(PasslockState& state,const PasslockDefinition& definition,const std::string& code);
+};
+
+// VEK 1.7 presentation/lifecycle metadata. These systems deliberately contain
+// no renderer, audio-device, filesystem or native-pointer access. They only
+// describe safe host-facing behavior and timing.
+struct AudioCueDefinition {
+    std::string id;
+    std::string assetId;
+    float volume=1.0f;
+    float pitch=1.0f;
+};
+class AudioCueRegistry {
+public:
+    bool RegisterCue(const AudioCueDefinition& definition);
+    bool RegisterCueValue(const VekValue& definition,std::string* error=nullptr);
+    const AudioCueDefinition* Find(const std::string& id) const;
+    void Clear();
+    std::size_t Size() const;
+    void RegisterNatives(VekScriptEngine& engine);
+private:
+    std::unordered_map<std::string,AudioCueDefinition> cues;
+};
+
+struct ScreenEffectDefinition {
+    std::string id;
+    float duration=2.0f;
+    float fadeIn=0.10f;
+    float hold=1.0f;
+    float fadeOut=0.65f;
+    struct Color { float r=150,g=0,b=0,a=180; } tint;
+    float vignette=0.75f;
+    float spatter=0.55f;
+    float pulse=0.15f;
+};
+struct ScreenEffectState {
+    bool active=false;
+    float time=0.0f;
+    float opacity=0.0f;
+};
+class ScreenEffectRegistry {
+public:
+    bool RegisterEffect(const ScreenEffectDefinition& definition);
+    bool RegisterEffectValue(const VekValue& definition,std::string* error=nullptr);
+    const ScreenEffectDefinition* Find(const std::string& id) const;
+    void Clear();
+    std::size_t Size() const;
+    void RegisterNatives(VekScriptEngine& engine);
+private:
+    std::unordered_map<std::string,ScreenEffectDefinition> effects;
+};
+class ScreenEffectSystem {
+public:
+    static void Start(ScreenEffectState& state);
+    static void Stop(ScreenEffectState& state);
+    static void Update(ScreenEffectState& state,const ScreenEffectDefinition& definition,float dt);
+};
+
+struct DeathSequenceDefinition {
+    std::string id;
+    float ragdollImpact=24.0f;
+    float ragdollDuration=2.25f;
+    float screenDelay=0.08f;
+    float audioDelay=0.28f;
+    float respawnDelay=2.75f;
+    std::string screenEffectId;
+    std::string audioCueId;
+};
+struct DeathSequenceState {
+    bool active=false;
+    float time=0.0f;
+    bool screenStarted=false;
+    bool audioPlayed=false;
+    bool respawnIssued=false;
+};
+struct DeathSequenceEvents {
+    bool startScreen=false;
+    bool playAudio=false;
+    bool respawn=false;
+};
+class DeathSequenceRegistry {
+public:
+    bool RegisterSequence(const DeathSequenceDefinition& definition);
+    bool RegisterSequenceValue(const VekValue& definition,std::string* error=nullptr);
+    const DeathSequenceDefinition* Find(const std::string& id) const;
+    void Clear();
+    std::size_t Size() const;
+    void RegisterNatives(VekScriptEngine& engine);
+private:
+    std::unordered_map<std::string,DeathSequenceDefinition> sequences;
+};
+class DeathSequenceSystem {
+public:
+    static void Begin(DeathSequenceState& state);
+    static DeathSequenceEvents Update(DeathSequenceState& state,const DeathSequenceDefinition& definition,float dt);
+    static void Cancel(DeathSequenceState& state);
+};
+
+struct GroundingProfile {
+    std::string id;
+    // Procedural humanoids are rooted near their lower body. The host supplies
+    // the avatar height scale and VEK resolves a feet-on-surface root height.
+    float rootOffsetPerHeight=0.15f;
+    float minimumRootOffset=0.08f;
+    float maximumRootOffset=0.30f;
+    float snapTolerance=0.04f;
+};
+class GroundingRegistry {
+public:
+    bool RegisterProfile(const GroundingProfile& definition);
+    bool RegisterProfileValue(const VekValue& definition,std::string* error=nullptr);
+    const GroundingProfile* Find(const std::string& id) const;
+    void Clear();
+    std::size_t Size() const;
+    void RegisterNatives(VekScriptEngine& engine);
+private:
+    std::unordered_map<std::string,GroundingProfile> profiles;
+};
+class GroundingSystem {
+public:
+    static float RootYForSurface(float surfaceY,float avatarHeight,const GroundingProfile& profile);
 };
 
 enum class GuiCommandType{

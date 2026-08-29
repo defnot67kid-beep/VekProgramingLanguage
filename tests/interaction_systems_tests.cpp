@@ -36,9 +36,9 @@ int main(){
     vek::GarageDoorRegistry garages;
     VekValue garage=VekValue::Map();
     garage.Set("id","hangar.main"); garage.Set("width",24.0); garage.Set("height",8.0);
-    garage.Set("panel_count",8); garage.Set("starts_locked",true); garage.Set("open_duration",2.0); garage.Set("allow_inside_egress",true); garage.Set("inside_open_distance",6.0);
+    garage.Set("panel_count",8); garage.Set("starts_locked",true); garage.Set("open_duration",2.0); garage.Set("allow_inside_egress",true); garage.Set("inside_open_distance",6.0); garage.Set("panel_overlap",0.03); garage.Set("collision_clear_fraction",0.70);
     assert(garages.RegisterGarageValue(garage,&error));
-    const auto* gd=garages.Find("hangar.main"); assert(gd);
+    const auto* gd=garages.Find("hangar.main"); assert(gd); assert(gd->panelOverlap>0.02f&&gd->collisionClearFraction<0.8f);
     vek::GarageDoorState gs; vek::GarageDoorSystem::Reset(gs,*gd);
     assert(!vek::GarageDoorSystem::RequestOpen(gs,*gd,false));
     assert(vek::GarageDoorSystem::RequestOpen(gs,*gd,true));
@@ -54,6 +54,32 @@ int main(){
     vek::PasslockState ls;
     assert(vek::PasslockSystem::Submit(ls,*ld,"1111")==vek::PasslockResult::Denied);
     assert(vek::PasslockSystem::Submit(ls,*ld,"2580")==vek::PasslockResult::Granted);
+
+    // VEK 1.7 lifecycle/presentation metadata remains host-safe: scripts only
+    // describe cues, screen effects, death timing and feet-on-ground alignment.
+    vek::AudioCueRegistry audio;
+    VekValue cue=VekValue::Map(); cue.Set("id","death.reset"); cue.Set("asset","audio/death_reset.wav"); cue.Set("volume",0.8); cue.Set("pitch",0.9);
+    assert(audio.RegisterCueValue(cue,&error)); assert(audio.Find("death.reset"));
+    VekValue unsafeCue=VekValue::Map(); unsafeCue.Set("id","bad"); unsafeCue.Set("asset","../../secret.wav");
+    assert(!audio.RegisterCueValue(unsafeCue,&error));
+
+    vek::ScreenEffectRegistry effects;
+    VekValue fx=VekValue::Map(); fx.Set("id","death.blood"); fx.Set("duration",2.4); fx.Set("fade_in",0.1); fx.Set("fade_out",0.7); fx.Set("vignette",0.85); fx.Set("spatter",0.65);
+    VekValue tint=VekValue::Map(); tint.Set("r",145); tint.Set("g",0); tint.Set("b",0); tint.Set("a",190); fx.Set("tint",tint);
+    assert(effects.RegisterEffectValue(fx,&error)); auto* fxd=effects.Find("death.blood"); assert(fxd&&fxd->vignette>0.8f);
+    vek::ScreenEffectState fxs; vek::ScreenEffectSystem::Start(fxs); vek::ScreenEffectSystem::Update(fxs,*fxd,0.2f); assert(fxs.active&&fxs.opacity>0.0f);
+
+    vek::DeathSequenceRegistry deaths;
+    VekValue death=VekValue::Map(); death.Set("id","player.reset"); death.Set("ragdoll_impact",28); death.Set("ragdoll_duration",2.2); death.Set("screen_delay",0.05); death.Set("audio_delay",0.12); death.Set("respawn_delay",0.4); death.Set("screen_effect","death.blood"); death.Set("audio_cue","death.reset");
+    assert(deaths.RegisterSequenceValue(death,&error)); auto* dd=deaths.Find("player.reset"); assert(dd);
+    vek::DeathSequenceState ds; vek::DeathSequenceSystem::Begin(ds); bool screen=false,sound=false,respawn=false;
+    for(int i=0;i<8;++i){auto e=vek::DeathSequenceSystem::Update(ds,*dd,0.1f);screen|=e.startScreen;sound|=e.playAudio;respawn|=e.respawn;}
+    assert(screen&&sound&&respawn&&!ds.active);
+
+    vek::GroundingRegistry grounding;
+    VekValue gp=VekValue::Map(); gp.Set("id","player.default"); gp.Set("root_offset_per_height",0.15); gp.Set("min_root_offset",0.08); gp.Set("max_root_offset",0.30);
+    assert(grounding.RegisterProfileValue(gp,&error)); auto* gpd=grounding.Find("player.default"); assert(gpd);
+    float rootY=vek::GroundingSystem::RootYForSurface(0.0f,1.0f,*gpd); assert(rootY>0.149f&&rootY<0.151f);
 
     vek::GuiSystem gui; gui.BeginFrame(); gui.BeginModal("access","GARAGE ACCESS");
     gui.PasswordInput("pin","****"); gui.StatusBadge("status","READY","neutral");
@@ -76,13 +102,17 @@ int main(){
     assert(!gui.Commands().empty()&&gui.Commands()[0].textPolicy.autoFit&&gui.Commands()[0].textPolicy.maxLines==2);
 
     VekScriptEngine vm; VekRegisterStandardLibrary(vm);
-    animations.RegisterNatives(vm); prompts.RegisterNatives(vm); garages.RegisterNatives(vm); locks.RegisterNatives(vm); gui.RegisterNatives(vm);
+    animations.RegisterNatives(vm); prompts.RegisterNatives(vm); garages.RegisterNatives(vm); locks.RegisterNatives(vm); audio.RegisterNatives(vm); effects.RegisterNatives(vm); deaths.RegisterNatives(vm); grounding.RegisterNatives(vm); gui.RegisterNatives(vm);
     assert(vm.LoadSource(R"(
       fn setup(){
         animation_register({id:"walk.to.door",duration:2.0,loop:false});
         prompt_register({id:"door.prompt",action_text:"Open",object_text:"Door",input_key:"E",max_distance:4});
         garage_register({id:"garage.script",width:18,height:7,panel_count:7,starts_locked:true});
         passlock_register({id:"lock.script",code:"2468",garage_id:"garage.script"});
+        audio_cue_register({id:"death.script",asset:"audio/death.wav",volume:0.8,pitch:1.0});
+        screen_effect_register({id:"blood.script",duration:2.0,vignette:0.8,spatter:0.5});
+        death_sequence_register({id:"reset.script",ragdoll_impact:25,respawn_delay:2.5,screen_effect:"blood.script",audio_cue:"death.script"});
+        grounding_register({id:"ground.script",root_offset_per_height:0.15});
         gui_begin_modal("lock","ACCESS"); gui_password_input("pin","****"); gui_status_badge("state","LOCKED","warning"); gui_end_modal();
         return animation_duration("walk.to.door") + prompt_max_distance("door.prompt") + garage_open_duration("garage.script") + passlock_max_digits("lock.script");
       }

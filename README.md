@@ -4,7 +4,7 @@
 
 VEK started as the secure gameplay scripting language for the Custom Vehicle Game, but the runtime is designed to be usable by other applications as well. It keeps one canonical language/runtime implementation and exposes safe host APIs instead of requiring every host language to reimplement VEK.
 
-Current version: **1.6.0**
+Current version: **1.7.0**
 
 ## What VEK is designed for
 
@@ -69,6 +69,10 @@ VEK currently includes reusable native-side SDK systems for:
 - Proximity prompts
 - Garage doors
 - Passlocks/access control
+- screen-effect metadata and playback state
+- safe audio-cue metadata
+- death/respawn sequence timing
+- feet-on-ground / grounding profiles
 - Responsive GUI text fitting, wrapping, clipping and ellipsis
 - Safe click-only interaction metadata and inside-egress garage policy
 
