@@ -4,7 +4,7 @@
 
 VEK started as the secure gameplay scripting language for the Custom Vehicle Game, but the runtime is designed to be usable by other applications as well. It keeps one canonical language/runtime implementation and exposes safe host APIs instead of requiring every host language to reimplement VEK.
 
-Current version: **1.9.0**
+Current version: **2.0.0**
 
 ## What VEK is designed for
 
@@ -77,6 +77,14 @@ VEK currently includes reusable native-side SDK systems for:
 - feet-on-ground / grounding profiles
 - Responsive GUI text fitting, wrapping, clipping and ellipsis
 - Safe click-only interaction metadata and inside-egress garage policy
+
+## VEK 2.0 authority/security systems
+
+VEK 2.0 adds deterministic server-authority helpers for multiplayer hosts. Per-action policy can require an authenticated session, capabilities, bounded payload shape/size, monotonic sequences, replay nonces and burst-tolerant token-bucket limits. Authority/action/schema/native registrations reject duplicates, and replication field types are allow-listed.
+
+The networking layer must derive `actorId`, `sessionId` and authentication state from the trusted connection/session. These values must not be accepted from an untrusted packet and then treated as authenticated. VEK validates policy and protocol invariants; the native host still owns cryptographic authentication, encrypted transport, sockets and connection identity.
+
+VEK deliberately does not turn heuristic anomaly scores into automatic bans. Hard rejection is based on explicit rules, which makes security behavior auditable and reduces false-positive risk.
 
 ## GUI system
 
@@ -248,7 +256,7 @@ VEK/
 
 ## Secure server-authoritative SDK
 
-VEK 1.9 adds a host-side authority/security SDK for multiplayer games. The networking transport and user authentication remain native responsibilities, while VEK can define authoritative gameplay actions and replication schemas.
+VEK 2.0 strengthens the host-side authority/security SDK for multiplayer games. The networking transport and user authentication remain native responsibilities, while VEK can define authoritative gameplay actions and replication schemas.
 
 The SDK includes hardened runtime security tiers, sealed capability manifests, action payload limits, sequence validation, replay-nonce detection, per-action rate limits, server-only commit checks, bounded security audit events, and replication schemas.
 

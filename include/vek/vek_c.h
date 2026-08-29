@@ -32,6 +32,7 @@ VEK_C_API int vek_set_authority_role(vek_runtime* runtime, int role);
 VEK_C_API size_t vek_authority_action_count(vek_runtime* runtime);
 VEK_C_API size_t vek_replication_schema_count(vek_runtime* runtime);
 VEK_C_API int vek_authority_validate_request(vek_runtime* runtime, const char* action_id, const char* actor_id, uint64_t sequence, const char* nonce, const char* payload_text, const char* granted_capability, double now_seconds);
+VEK_C_API int vek_authority_validate_request_v2(vek_runtime* runtime, const char* action_id, const char* actor_id, const char* session_id, int authenticated, uint64_t sequence, const char* nonce, const char* payload_text, const char* granted_capability, double now_seconds);
 VEK_C_API const char* vek_authority_last_reason(vek_runtime* runtime);
 VEK_C_API vek_value vek_call(vek_runtime* runtime, const char* function_name, const vek_value* args, size_t arg_count);
 VEK_C_API vek_value vek_emit_event(vek_runtime* runtime, const char* event_name, const vek_value* args, size_t arg_count);

@@ -40,9 +40,15 @@ struct AuthorityActionDefinition {
     bool allowClientRequest=true;
     bool requireSequence=true;
     bool replayProtected=true;
+    bool requireAuthenticatedSession=false;
     float maxRequestsPerSecond=10.0f;
     int burst=20;
     std::size_t maxPayloadBytes=4096;
+    std::size_t maxPayloadDepth=12;
+    std::size_t maxPayloadItems=256;
+    std::size_t maxStringBytes=2048;
+    std::size_t minNonceBytes=12;
+    std::size_t maxNonceBytes=96;
     std::string requiredCapability;
 };
 
@@ -85,6 +91,8 @@ private:
 struct AuthorityRequest {
     std::string actionId;
     std::string actorId;
+    std::string sessionId;
+    bool authenticated=false;
     std::uint64_t sequence=0;
     std::string nonce;
     VekValue payload;
@@ -99,7 +107,13 @@ enum class AuthorityDecisionCode {
     PayloadTooLarge,
     OutOfOrder,
     ReplayDetected,
-    RateLimited
+    RateLimited,
+    InvalidIdentity,
+    Unauthenticated,
+    InvalidSession,
+    InvalidNonce,
+    InvalidPayload,
+    StateCapacity
 };
 struct AuthorityDecision {
     AuthorityDecisionCode code=AuthorityDecisionCode::Allowed;
@@ -132,17 +146,19 @@ public:
     HostAuthorityRole Role() const { return hostRole; }
     void ResetActor(const std::string& actorId);
     void Reset();
+    void SetStateCapacity(std::size_t maxStates){maxTrackedStates=maxStates<64?64:maxStates;}
+    std::size_t StateCapacity() const { return maxTrackedStates; }
 
-    // Validate a client-originated request on a server/listen-server. This does
-    // not authenticate a socket/user; the native networking/auth layer must do
-    // that before supplying a trusted actorId here.
+    // Validates a client-originated request on an authoritative host. VEK 2.0
+    // performs only deterministic checks here: authenticated-session policy,
+    // capability checks, bounded payload shape/size, token-bucket rate limits,
+    // monotonic sequence numbers and replay nonces. Heuristic anomaly scores do
+    // not auto-ban users, which avoids turning noisy telemetry into false positives.
     AuthorityDecision ValidateClientRequest(const AuthorityRequest& request,
                                             const AuthorityActionRegistry& registry,
                                             const CapabilityManifest& actorCapabilities,
                                             float nowSeconds);
 
-    // Guard authoritative state mutation. Client hosts are never allowed to
-    // commit actions marked serverAuthoritative.
     AuthorityDecision ValidateAuthoritativeCommit(const std::string& actionId,
                                                    const AuthorityActionRegistry& registry) const;
 
@@ -151,14 +167,16 @@ private:
     struct ActorActionState {
         std::uint64_t lastSequence=0;
         bool hasSequence=false;
-        float windowStart=0.0f;
-        int requestCount=0;
+        float tokens=0.0f;
+        float lastRefill=0.0f;
+        bool bucketInitialized=false;
         std::deque<std::string> recentNonces;
         std::unordered_set<std::string> nonceSet;
     };
     HostAuthorityRole hostRole=HostAuthorityRole::Standalone;
     std::unordered_map<std::string,ActorActionState> state;
-    SecurityAuditBuffer audit{512};
+    std::size_t maxTrackedStates=32768;
+    SecurityAuditBuffer audit{1024};
     AuthorityDecision Deny(const AuthorityRequest& req,AuthorityDecisionCode code,const std::string& reason,float nowSeconds);
 };
 

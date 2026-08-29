@@ -1,4 +1,4 @@
-# VEK 1.9 server-authoritative gameplay policy example.
+# VEK 2.0 server-authoritative gameplay policy example.
 fn setup() {
     authority_action_register({
         id: "inventory.move_item",
@@ -6,6 +6,12 @@ fn setup() {
         allow_client_request: true,
         require_sequence: true,
         replay_protected: true,
+        require_authenticated_session: true,
+        max_payload_depth: 8,
+        max_payload_items: 128,
+        max_string_bytes: 1024,
+        min_nonce_bytes: 16,
+        max_nonce_bytes: 96,
         max_requests_per_second: 12,
         burst: 18,
         max_payload_bytes: 4096,

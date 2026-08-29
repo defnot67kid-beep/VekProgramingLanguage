@@ -1,5 +1,27 @@
 # VEK Versions
 
+## VEK 2.0.0
+
+### Deterministic anti-abuse hardening with lower false-positive risk
+
+- authenticated-session requirements can be declared per authority action
+- bounded payload depth, item count and per-string size before serialization
+- cyclic-container and non-finite-number rejection for network payloads
+- configurable replay-nonce length/format validation
+- token-bucket request limiting replaces fixed one-second windows so normal packet clumping is less likely to be rejected
+- rate-limited requests do not consume sequence/nonce state, allowing safe retry after refill
+- bounded server authority state prevents untrusted identities from growing memory without limit
+- duplicate authority actions, replication schemas, fields and native registrations are rejected
+- C ABI duplicate-native registration can no longer overwrite the callback behind a rejected duplicate name
+- capability/action/schema identifiers are format-checked
+- replication field types are allow-listed
+- Hardened Server VM budgets are tighter than 1.9 while Development remains roomy
+- standard-library container mutation helpers have hard growth caps
+
+Security philosophy: hard denials come from deterministic protocol invariants, not opaque heuristic scores. Suspicious behavior can be audited without automatically banning a legitimate player. Trusted native networking still owns cryptographic authentication, transport security and session establishment.
+
+---
+
 ## VEK 1.9.0
 
 ### Hardened authority, multiplayer server policy and camera-world safety

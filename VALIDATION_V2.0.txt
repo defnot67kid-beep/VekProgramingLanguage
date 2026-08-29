@@ -1,0 +1,14 @@
+VEK 2.0 VALIDATION
+==================
+
+- CMake configure/build: PASS
+- Test suite: 7/7 PASS
+  * language
+  * game systems
+  * editor systems
+  * v1.3 language features/regressions
+  * interaction/GUI systems
+  * authority security
+  * C ABI
+- C ABI regression verifies that a rejected duplicate native registration cannot replace the original native callback.
+- Authority tests cover authenticated sessions, nonce validation, replay/sequence checks, token refill and retry behavior after rate limiting.
