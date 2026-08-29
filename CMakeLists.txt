@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.22)
-project(VEK VERSION 1.8.0 LANGUAGES C CXX)
+project(VEK VERSION 1.9.0 LANGUAGES C CXX)
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
@@ -14,6 +14,7 @@ add_library(vek_runtime STATIC
     src/VekGameSystems.cpp
     src/VekEditorSystems.cpp
     src/VekSdkSystems.cpp
+    src/VekAuthoritySystems.cpp
 )
 target_include_directories(vek_runtime PUBLIC
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
@@ -59,6 +60,10 @@ if(VEK_BUILD_TESTS)
     add_executable(vek_interaction_systems_tests tests/interaction_systems_tests.cpp)
     target_link_libraries(vek_interaction_systems_tests PRIVATE VEK::Runtime)
     add_test(NAME vek_interaction_gui COMMAND vek_interaction_systems_tests)
+
+    add_executable(vek_authority_security_tests tests/authority_security_tests.cpp)
+    target_link_libraries(vek_authority_security_tests PRIVATE VEK::Runtime)
+    add_test(NAME vek_authority_security COMMAND vek_authority_security_tests)
 
     if(VEK_BUILD_C_ABI)
         add_executable(vek_c_api_tests tests/c_api_tests.c)

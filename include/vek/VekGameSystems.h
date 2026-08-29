@@ -346,6 +346,9 @@ struct CameraProfileDefinition {
     float editorPitchMax=85.0f;
     float editorFov=60.0f;
     float editorOrthoSize=28.0f;
+    bool preventBelowWorld=true;
+    float minimumWorldY=0.35f;
+    float minimumTargetY=0.05f;
     std::vector<std::string> cycleModes{"third_person","close_third_person","first_person","free_inspection"};
 };
 class CameraProfileRegistry {

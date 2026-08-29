@@ -17,11 +17,23 @@ class Runtime:
         self.lib.vek_destroy.argtypes=[ctypes.c_void_p]; self.lib.vek_destroy.restype=None
         self.lib.vek_last_error.argtypes=[ctypes.c_void_p]; self.lib.vek_last_error.restype=ctypes.c_char_p
         self.lib.vek_load_file.argtypes=[ctypes.c_void_p,ctypes.c_char_p]; self.lib.vek_load_file.restype=ctypes.c_int
+        self.lib.vek_set_security_tier.argtypes=[ctypes.c_void_p,ctypes.c_int]; self.lib.vek_set_security_tier.restype=ctypes.c_int
+        self.lib.vek_set_authority_role.argtypes=[ctypes.c_void_p,ctypes.c_int]; self.lib.vek_set_authority_role.restype=ctypes.c_int
+        self.lib.vek_authority_validate_request.argtypes=[ctypes.c_void_p,ctypes.c_char_p,ctypes.c_char_p,ctypes.c_uint64,ctypes.c_char_p,ctypes.c_char_p,ctypes.c_char_p,ctypes.c_double]; self.lib.vek_authority_validate_request.restype=ctypes.c_int
+        self.lib.vek_authority_last_reason.argtypes=[ctypes.c_void_p]; self.lib.vek_authority_last_reason.restype=ctypes.c_char_p
         self.lib.vek_call.argtypes=[ctypes.c_void_p,ctypes.c_char_p,ctypes.POINTER(_Value),ctypes.c_size_t]; self.lib.vek_call.restype=_Value
         self._r=self.lib.vek_create()
         if not self._r: raise RuntimeError("VEK runtime creation failed")
     @property
     def last_error(self): return (self.lib.vek_last_error(self._r) or b"").decode()
+    def set_security_tier(self,tier):
+        if not self.lib.vek_set_security_tier(self._r,int(tier)): raise RuntimeError("VEK security tier failed")
+    def set_authority_role(self,role):
+        if not self.lib.vek_set_authority_role(self._r,int(role)): raise RuntimeError("VEK authority role failed")
+    def validate_request(self,action,actor,sequence,nonce,payload="",capability="",now_seconds=0.0):
+        ok=self.lib.vek_authority_validate_request(self._r,str(action).encode(),str(actor).encode(),int(sequence),str(nonce).encode(),str(payload).encode(),str(capability).encode(),float(now_seconds))
+        reason=(self.lib.vek_authority_last_reason(self._r) or b"").decode()
+        return bool(ok),reason
     def load_file(self,path):
         if not self.lib.vek_load_file(self._r,str(path).encode()): raise RuntimeError(self.last_error)
     def call(self,name,*args):

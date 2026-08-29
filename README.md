@@ -4,7 +4,7 @@
 
 VEK started as the secure gameplay scripting language for the Custom Vehicle Game, but the runtime is designed to be usable by other applications as well. It keeps one canonical language/runtime implementation and exposes safe host APIs instead of requiring every host language to reimplement VEK.
 
-Current version: **1.8.0**
+Current version: **1.9.0**
 
 ## What VEK is designed for
 
@@ -245,6 +245,16 @@ VEK/
 ├── README.md
 └── Versions.md
 ```
+
+## Secure server-authoritative SDK
+
+VEK 1.9 adds a host-side authority/security SDK for multiplayer games. The networking transport and user authentication remain native responsibilities, while VEK can define authoritative gameplay actions and replication schemas.
+
+The SDK includes hardened runtime security tiers, sealed capability manifests, action payload limits, sequence validation, replay-nonce detection, per-action rate limits, server-only commit checks, bounded security audit events, and replication schemas.
+
+A hacked client must still be treated as untrusted. For meaningful multiplayer anti-cheat, authoritative economy, inventory, health, progression, jobs, spawning and build validation should run on a trusted server. VEK does not claim that an offline/client-controlled executable can be made unhackable.
+
+The stable C ABI exposes security-tier and authority helpers so C, Rust, C#, Python, Node and future bindings can share the same canonical runtime. See `examples/server_authority.vek`.
 
 ## Version history
 

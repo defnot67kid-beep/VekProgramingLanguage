@@ -1,5 +1,38 @@
 # VEK Versions
 
+## VEK 1.9.0
+
+### Hardened authority, multiplayer server policy and camera-world safety
+
+New features:
+
+- `SecurityTier` with Development, Hardened Client and Hardened Server runtime budgets
+- `SecurityPolicyFactory` for consistent VM limits
+- sealed `CapabilityManifest` host permissions
+- VEK-defined `AuthorityActionRegistry`
+- server-authoritative action policies
+- client-request allow/deny policy
+- maximum request payload sizes
+- monotonic action sequence validation
+- replay-nonce detection with bounded nonce history
+- per-actor/per-action rate limiting and burst limits
+- required capability checks
+- client authoritative-commit rejection
+- bounded `SecurityAuditBuffer`
+- VEK-defined `ReplicationSchemaRegistry`
+- server-owned and owner-only replicated fields
+- reliable/unreliable replication metadata and maximum update rates
+- stable C ABI security-tier controls
+- stable C ABI host-authority role controls
+- stable C ABI request validation helpers
+- safe camera minimum-world-height policy support
+- server-authority example script
+
+Security note: VEK 1.9 reduces attack surface and makes server-authoritative designs easier, but it does not promise an unhackable client or a fixed percentage of remaining vulnerabilities. Cryptography, identity/authentication, sockets, OS integration, raw memory and authoritative network transport remain native host responsibilities.
+
+---
+
+
 This file is the single version history for VEK. New release notes and feature additions should be added here instead of creating separate changelog Markdown files.
 
 ---
