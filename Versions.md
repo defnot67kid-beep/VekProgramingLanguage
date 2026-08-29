@@ -5,6 +5,28 @@ This file is the single version history for VEK. New release notes and feature a
 ---
 
 
+## VEK 1.8.0
+
+### Camera, skybox, humanoid rig and world-policy SDK
+
+VEK 1.8 moves another large layer of configurable engine behavior into safe script-owned policy while keeping native rendering, physics and memory access protected.
+
+New features:
+
+- `CameraProfileRegistry` for third-person, close, first-person and editor camera policy
+- VEK-defined FOV, camera distances, target heights, pitch limits, smoothing speeds and acceleration/deceleration
+- VEK-defined RMB look policy, sensitivity, inversion and 45-degree/other alignment step sizes
+- VEK-defined camera cycle order/allowed modes for third-person, close, first-person and free-inspection cameras
+- editor-camera move speed, fast/fine multipliers, pitch/yaw speed and orthographic size
+- `SkyboxRegistry` with zenith/horizon/ground/sun colors, fog distances, sun direction/size and day-length metadata
+- safe sky asset IDs with path-traversal rejection; native hosts still own GPU/texture loading
+- `HumanoidRigRegistry` with named joint chains, parents, lengths, radii, mass, ragdoll weights and angular limits
+- `WorldGameplayPolicyRegistry` for target FPS, walk/run/sprint speeds, interaction ranges, frame-delta safety limits and global camera/sky permissions
+- camera/sky/rig/world-policy natives for embedding
+- all new systems expose data and safe IDs only; scripts never receive raw cameras, renderer handles, physics pointers or OS access
+
+---
+
 ## VEK 1.7.0
 
 ### Lifecycle effects, audio cues, death sequences and grounding

@@ -4,7 +4,7 @@
 
 VEK started as the secure gameplay scripting language for the Custom Vehicle Game, but the runtime is designed to be usable by other applications as well. It keeps one canonical language/runtime implementation and exposes safe host APIs instead of requiring every host language to reimplement VEK.
 
-Current version: **1.7.0**
+Current version: **1.8.0**
 
 ## What VEK is designed for
 
@@ -21,6 +21,8 @@ A host can use VEK for things such as:
 - animations and interaction metadata
 - proximity prompts
 - garage doors and access-control rules
+- camera profiles, skybox/environment policy and humanoid rig definitions
+- global world/gameplay policy such as movement speeds and frame limits
 - click-only / line-of-sight interaction policy
 - responsive GUI text layout and auto-fit rules
 - jobs, missions, economy and progression logic

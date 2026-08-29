@@ -101,8 +101,29 @@ int main(){
     gui.BeginFrame(); gui.Label("A long label that must fit",{0,0,120,30},"fit"); gui.EndFrame();
     assert(!gui.Commands().empty()&&gui.Commands()[0].textPolicy.autoFit&&gui.Commands()[0].textPolicy.maxLines==2);
 
+    // VEK 1.8 camera/sky/rig/world-policy registries.
+    vek::CameraProfileRegistry cameras;
+    VekValue camera=VekValue::Map();camera.Set("id","camera.test");camera.Set("fov",67);camera.Set("rmb_look",true);camera.Set("alignment_step",30);camera.Set("editor_move_speed",18);
+    assert(cameras.RegisterProfileValue(camera,&error));auto* cam=cameras.Find("camera.test");assert(cam&&cam->fov==67.0f&&cam->rmbLook&&cam->alignmentStep==30.0f);
+
+    vek::SkyboxRegistry skies;
+    VekValue sky=VekValue::Map();sky.Set("id","sky.test");sky.Set("sun_pitch",42);sky.Set("fog_start",100);sky.Set("fog_end",250);
+    VekValue zen=VekValue::Map();zen.Set("r",80);zen.Set("g",140);zen.Set("b",210);sky.Set("zenith",zen);
+    assert(skies.RegisterSkyboxValue(sky,&error));assert(skies.Find("sky.test"));
+    VekValue badSky=VekValue::Map();badSky.Set("id","sky.bad");badSky.Set("texture_asset","../../evil.dds");assert(!skies.RegisterSkyboxValue(badSky,&error));
+
+    vek::HumanoidRigRegistry rigs;
+    VekValue rig=VekValue::Map();rig.Set("id","rig.test");VekValue joints=VekValue::Array();
+    VekValue root=VekValue::Map();root.Set("name","root");root.Set("length",0.2);root.Set("ragdoll_weight",0.5);joints.Push(root);
+    VekValue spine=VekValue::Map();spine.Set("name","spine");spine.Set("parent","root");spine.Set("length",0.4);spine.Set("ragdoll_weight",1.1);joints.Push(spine);rig.Set("joints",joints);
+    assert(rigs.RegisterRigValue(rig,&error));assert(rigs.Find("rig.test")&&rigs.Find("rig.test")->joints.size()==2);
+
+    vek::WorldGameplayPolicyRegistry worldPolicies;
+    VekValue worldPolicy=VekValue::Map();worldPolicy.Set("id","game.test");worldPolicy.Set("target_fps",144);worldPolicy.Set("run_speed",6.5);worldPolicy.Set("sprint_speed",9.8);worldPolicy.Set("camera_rmb_look",true);
+    assert(worldPolicies.RegisterPolicyValue(worldPolicy,&error));auto* wp=worldPolicies.Find("game.test");assert(wp&&wp->targetFps==144&&wp->cameraRmbLook);
+
     VekScriptEngine vm; VekRegisterStandardLibrary(vm);
-    animations.RegisterNatives(vm); prompts.RegisterNatives(vm); garages.RegisterNatives(vm); locks.RegisterNatives(vm); audio.RegisterNatives(vm); effects.RegisterNatives(vm); deaths.RegisterNatives(vm); grounding.RegisterNatives(vm); gui.RegisterNatives(vm);
+    animations.RegisterNatives(vm); prompts.RegisterNatives(vm); garages.RegisterNatives(vm); locks.RegisterNatives(vm); audio.RegisterNatives(vm); effects.RegisterNatives(vm); deaths.RegisterNatives(vm); grounding.RegisterNatives(vm); cameras.RegisterNatives(vm); skies.RegisterNatives(vm); rigs.RegisterNatives(vm); worldPolicies.RegisterNatives(vm); gui.RegisterNatives(vm);
     assert(vm.LoadSource(R"(
       fn setup(){
         animation_register({id:"walk.to.door",duration:2.0,loop:false});
@@ -113,12 +134,16 @@ int main(){
         screen_effect_register({id:"blood.script",duration:2.0,vignette:0.8,spatter:0.5});
         death_sequence_register({id:"reset.script",ragdoll_impact:25,respawn_delay:2.5,screen_effect:"blood.script",audio_cue:"death.script"});
         grounding_register({id:"ground.script",root_offset_per_height:0.15});
+        camera_profile_register({id:"camera.script",fov:62,rmb_look:true,alignment_step:45});
+        skybox_register({id:"sky.script",sun_pitch:50});
+        rig_register({id:"rig.script",joints:[{name:"root",length:0.2},{name:"spine",parent:"root",length:0.4}]});
+        world_policy_register({id:"game.script",target_fps:120,run_speed:6,sprint_speed:9});
         gui_begin_modal("lock","ACCESS"); gui_password_input("pin","****"); gui_status_badge("state","LOCKED","warning"); gui_end_modal();
-        return animation_duration("walk.to.door") + prompt_max_distance("door.prompt") + garage_open_duration("garage.script") + passlock_max_digits("lock.script");
+        return animation_duration("walk.to.door") + prompt_max_distance("door.prompt") + garage_open_duration("garage.script") + passlock_max_digits("lock.script") + camera_profile_fov("camera.script") + rig_joint_count("rig.script");
       }
     )","interaction_test.vek"));
     auto value=vm.Call("setup");
-    assert(value.AsNumber()>5.9);
-    std::cout<<"VEK interaction + responsive GUI tests: PASS\n";
+    assert(value.AsNumber()>69.0);
+    std::cout<<"VEK interaction + responsive GUI + camera/sky/rig tests: PASS\n";
     return 0;
 }

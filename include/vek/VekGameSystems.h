@@ -310,6 +310,138 @@ public:
     static float RootYForSurface(float surfaceY,float avatarHeight,const GroundingProfile& profile);
 };
 
+
+// VEK 1.8 camera/environment/rig policy. These structures contain only safe
+// scalar/string data. Native hosts still own actual camera matrices, GPU
+// rendering, collision queries and physics bodies.
+struct CameraProfileDefinition {
+    std::string id;
+    float thirdPersonDistance=8.0f;
+    float closeDistance=4.3f;
+    float targetHeight=1.15f;
+    float closeTargetHeight=1.35f;
+    float firstPersonEyeHeight=1.66f;
+    float fov=60.0f;
+    float pitchMin=-25.0f;
+    float pitchMax=65.0f;
+    float yawSensitivity=0.12f;
+    float pitchSensitivity=0.10f;
+    float maxYawSpeed=720.0f;
+    float maxPitchSpeed=540.0f;
+    float yawAcceleration=3200.0f;
+    float yawDeceleration=4200.0f;
+    float pitchAcceleration=2600.0f;
+    float pitchDeceleration=3400.0f;
+    float alignmentStep=45.0f;
+    bool rmbLook=true;
+    bool invertMouseY=false;
+    float rmbYawScale=1.0f;
+    float rmbPitchScale=1.0f;
+    float editorMoveSpeed=12.0f;
+    float editorFastMultiplier=3.0f;
+    float editorFineMultiplier=0.25f;
+    float editorYawSpeed=90.0f;
+    float editorPitchSpeed=58.5f;
+    float editorPitchMin=-85.0f;
+    float editorPitchMax=85.0f;
+    float editorFov=60.0f;
+    float editorOrthoSize=28.0f;
+    std::vector<std::string> cycleModes{"third_person","close_third_person","first_person","free_inspection"};
+};
+class CameraProfileRegistry {
+public:
+    bool RegisterProfile(const CameraProfileDefinition& definition);
+    bool RegisterProfileValue(const VekValue& definition,std::string* error=nullptr);
+    const CameraProfileDefinition* Find(const std::string& id) const;
+    void Clear();
+    std::size_t Size() const;
+    void RegisterNatives(VekScriptEngine& engine);
+private:
+    std::unordered_map<std::string,CameraProfileDefinition> profiles;
+};
+
+struct SkyboxDefinition {
+    std::string id;
+    struct Color { float r=125,g=175,b=220,a=255; } zenith,horizon,ground,sun;
+    float horizonHeight=0.0f;
+    float sunYaw=38.0f;
+    float sunPitch=48.0f;
+    float sunSize=3.5f;
+    float ambient=0.70f;
+    float fogStart=125.0f;
+    float fogEnd=280.0f;
+    float dayLengthSeconds=1200.0f;
+    bool dynamicDayNight=false;
+    std::string textureAsset;
+};
+class SkyboxRegistry {
+public:
+    bool RegisterSkybox(const SkyboxDefinition& definition);
+    bool RegisterSkyboxValue(const VekValue& definition,std::string* error=nullptr);
+    const SkyboxDefinition* Find(const std::string& id) const;
+    void Clear();
+    std::size_t Size() const;
+    void RegisterNatives(VekScriptEngine& engine);
+private:
+    std::unordered_map<std::string,SkyboxDefinition> skyboxes;
+};
+
+struct RigJointDefinition {
+    std::string name;
+    std::string parent;
+    float length=0.2f;
+    float radius=0.08f;
+    float mass=1.0f;
+    float ragdollWeight=1.0f;
+    float pitchMin=-90.0f,pitchMax=90.0f;
+    float yawMin=-90.0f,yawMax=90.0f;
+    float rollMin=-90.0f,rollMax=90.0f;
+};
+struct HumanoidRigDefinition {
+    std::string id;
+    float globalRagdollStrength=1.0f;
+    float spineFlex=0.75f;
+    float neckFlex=0.85f;
+    float limbFlex=1.0f;
+    std::vector<RigJointDefinition> joints;
+};
+class HumanoidRigRegistry {
+public:
+    bool RegisterRig(const HumanoidRigDefinition& definition);
+    bool RegisterRigValue(const VekValue& definition,std::string* error=nullptr);
+    const HumanoidRigDefinition* Find(const std::string& id) const;
+    void Clear();
+    std::size_t Size() const;
+    void RegisterNatives(VekScriptEngine& engine);
+private:
+    std::unordered_map<std::string,HumanoidRigDefinition> rigs;
+};
+
+struct WorldGameplayPolicy {
+    std::string id="game.default";
+    int targetFps=120;
+    float movementWalk=2.4f;
+    float movementRun=5.2f;
+    float movementSprint=7.6f;
+    float interactionDistance=3.5f;
+    float vehicleEnterDistance=3.6f;
+    float mapMarkerDistance=250.0f;
+    float physicsMaxDt=0.05f;
+    bool cameraRmbLook=true;
+    bool skyEnabled=true;
+};
+class WorldGameplayPolicyRegistry {
+public:
+    bool RegisterPolicy(const WorldGameplayPolicy& definition);
+    bool RegisterPolicyValue(const VekValue& definition,std::string* error=nullptr);
+    const WorldGameplayPolicy* Find(const std::string& id) const;
+    void Clear();
+    std::size_t Size() const;
+    void RegisterNatives(VekScriptEngine& engine);
+private:
+    std::unordered_map<std::string,WorldGameplayPolicy> policies;
+};
+
 enum class GuiCommandType{
  BeginWindow,EndWindow,BeginModal,EndModal,BeginPanel,EndPanel,BeginDockPanel,EndDockPanel,BeginScrollPanel,EndScrollPanel,BeginGrid,EndGrid,BeginHorizontal,EndHorizontal,BeginVertical,EndVertical,BeginTabs,EndTabs,BeginTree,EndTree,BeginList,EndList,BeginContextMenu,EndContextMenu,BeginPropertyGrid,EndPropertyGrid,
  Label,Button,ImageButton,Checkbox,Slider,ProgressBar,TextInput,PasswordInput,SearchBox,ComboBox,Dropdown,StatusBadge,Keypad,Tooltip,Separator,Spacer
