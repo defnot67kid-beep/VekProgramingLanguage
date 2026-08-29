@@ -1,25 +1,39 @@
-# VEK 2.1 Portable Release Architecture
+# VEK 2.2 Windows Release Architecture
 
-VEK 2.1 adds a relocatable Windows distribution. The official release workflow builds a package whose root contains `vek.exe`, so users can add the package root itself to PATH.
+VEK 2.2 keeps the relocatable portable layout introduced in 2.1 and adds a separate native Windows GUI installer.
 
-Release layout:
+The release root is intentionally self-contained:
 
 ```text
-vek/
+VEK-v2.2.0-windows-x64/
 ├── vek.exe
+├── VekInstaller.exe
 ├── vek.dll
 ├── VERSION
-├── LICENSE
-├── README.md
+├── manifest.sha256
 ├── INSTALL_PATH.cmd
 ├── UNINSTALL_PATH.cmd
-├── manifest.sha256
 ├── include/
 ├── lib/
 ├── examples/
 └── docs/
 ```
 
-The CLI discovers its home from its executable path and only uses `VEK_HOME` as a fallback when that variable points at a structurally valid VEK installation.
+`vek.exe` discovers VEK_HOME from its own location. A hard-coded install path is not required.
 
-`vek verify` checks package files against `manifest.sha256`. This detects local changes/corruption; it is not a substitute for verifying that the release itself came from a trusted GitHub release.
+## Setup paths
+
+Normal users can choose any of these:
+
+- double-click `VekInstaller.exe`;
+- run `vek.exe --install` from an extracted package;
+- once on PATH, run `vek --install` from anywhere;
+- keep using `INSTALL_PATH.cmd`;
+- add the extracted directory to User PATH manually;
+- use Git clone for source development.
+
+The graphical installer does not replace the portable architecture. It is a convenience layer that can copy or register the same relocatable package.
+
+## Integrity
+
+The GitHub release workflow creates `manifest.sha256` after assembling the final package. `vek verify` checks installed files against that local manifest. The release ZIP also receives its own SHA-256 file.

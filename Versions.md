@@ -1,5 +1,20 @@
 # VEK Version History
 
+## VEK 2.2.0
+
+Native Windows installer and setup UX:
+
+- `vek --install` command with VEK ASCII startup mark
+- short `1 - 2 - 3` installation sequence and `Installing VEK...` console handoff
+- separate `VekInstaller.exe` built as a Windows GUI application (no installer console UI)
+- quick install/repair at `C:\\vek`
+- graphical custom-folder picker
+- use-current-folder registration mode for portable installs
+- optional Windows User PATH registration, enabled by default
+- Windows environment-change broadcast after PATH updates
+- portable release workflow packages and validates `VekInstaller.exe`
+- existing ZIP, `INSTALL_PATH.cmd`, manual PATH, and Git clone flows remain supported
+
 ## VEK 2.1.0
 
 Portable/relocatable release foundation:

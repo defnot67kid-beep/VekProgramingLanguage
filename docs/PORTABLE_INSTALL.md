@@ -1,16 +1,20 @@
-# VEK Portable Installation
+# VEK Windows Installation
 
-VEK 2.1 is designed so the Windows release can be moved anywhere without reinstalling it.
+VEK 2.2 can be used as a relocatable portable language or registered through its native Windows installer.
 
-## Fast setup
+## Recommended first-time setup
 
-1. Download `VEK-v2.1.0-windows-x64.zip` from the GitHub Release.
-2. Extract it.
-3. Optionally rename the extracted folder to `vek`.
-4. Move it anywhere, for example `C:\vek` or `D:\Dev\vek`.
-5. Run `INSTALL_PATH.cmd` once.
-6. Close Command Prompt and open a new one.
-7. Run:
+1. Download `VEK-v2.2.0-windows-x64.zip` from the GitHub Release.
+2. Extract the ZIP.
+3. Double-click `VekInstaller.exe`.
+4. Choose one of the Windows installer options:
+   - **Quick install** — `C:\vek`
+   - **Choose a folder** — select your own destination
+   - **Use this folder** — keep the extracted copy where it is
+5. Leave **Add VEK to my Windows User PATH** checked unless you specifically do not want a global `vek` command.
+6. Finish the installer.
+7. Close old Command Prompt windows and open a new one.
+8. Run:
 
 ```bat
 vek --version
@@ -18,21 +22,36 @@ vek info
 vek doctor
 ```
 
-No Git clone, CMake, Visual Studio or installer is required for users of the portable release.
+## Use the CLI to open the installer
 
-## Manual PATH setup
+If you are already in the extracted VEK folder, you can run:
 
-If you do not want to run `INSTALL_PATH.cmd`, add the VEK folder itself to your User PATH. If VEK is in `C:\vek`, add exactly:
-
-```text
-C:\vek
+```bat
+vek.exe --install
 ```
 
-`VEK_HOME` is optional and is not required. VEK normally discovers its installation from the location of `vek.exe`.
+After VEK is on PATH, you can run from anywhere:
 
-## Move VEK later
+```bat
+vek --install
+```
 
-The installation is relocatable. If you move `C:\vek` to `D:\Languages\vek`, remove the old PATH entry and add the new folder. The VEK binaries themselves do not contain a hard-coded install path.
+The CLI prints a VEK ASCII splash and a short `1 - 2 - 3` sequence, then hands installation to the graphical Windows installer.
+
+## Portable/manual setup still works
+
+You can skip the GUI completely:
+
+1. Extract VEK anywhere, for example `C:\vek` or `D:\Dev\vek`.
+2. Run `INSTALL_PATH.cmd`, or manually add that folder to your Windows User PATH.
+3. Open a new terminal.
+4. Run `vek --version`.
+
+`VEK_HOME` is optional. VEK normally discovers its installation from the location of `vek.exe`.
+
+## Moving VEK later
+
+VEK itself remains relocatable. If you move the folder after registering PATH, update the PATH entry to the new location. The installer can also use **Use this folder** to register a relocated copy.
 
 ## Git clone remains supported
 
@@ -44,4 +63,4 @@ cd VekProgramingLanguage
 BUILD_WINDOWS.bat
 ```
 
-The ZIP release is for normal use; Git clone is for source development.
+The release ZIP is the normal-user path. Git clone is for source development.

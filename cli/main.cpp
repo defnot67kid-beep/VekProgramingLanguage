@@ -17,6 +17,7 @@
 #if defined(_WIN32)
 #  define NOMINMAX
 #  include <windows.h>
+#  include <shellapi.h>
 #elif defined(__APPLE__)
 #  include <mach-o/dyld.h>
 #else
@@ -358,6 +359,55 @@ void printInfo(const fs::path& exe, const fs::path& home) {
     std::cout << "VEK_HOME: " << home.string() << "\n";
 }
 
+
+void printInstallIntro() {
+    std::cout
+        << "\n"
+        << " __     __  ______  _  __\n"
+        << " \\ \\   / / |  ____|| |/ /\n"
+        << "  \\ \\ / /  | |__   | ' / \n"
+        << "   \\ V /   |  __|  |  <  \n"
+        << "    \\_/    |______||_|\\_\\\n"
+        << "\n"
+        << "        V E K\n\n";
+#if defined(_WIN32)
+    std::cout << "1" << std::flush;
+    Sleep(220);
+    std::cout << " - 2" << std::flush;
+    Sleep(220);
+    std::cout << " - 3\n" << std::flush;
+    Sleep(220);
+#else
+    std::cout << "1 - 2 - 3\n";
+#endif
+    std::cout << "Installing VEK...\n" << std::flush;
+}
+
+int launchGuiInstaller(const fs::path& home) {
+    printInstallIntro();
+#if defined(_WIN32)
+    const fs::path installer = home / "VekInstaller.exe";
+    std::error_code ec;
+    if (!fs::is_regular_file(installer, ec)) {
+        std::cerr << "VEK install: VekInstaller.exe was not found in " << home.string() << "\n";
+        std::cerr << "Download/extract an official VEK 2.2+ Windows portable package, then try again.\n";
+        return 2;
+    }
+    const HINSTANCE result = ShellExecuteW(nullptr, L"open", installer.c_str(), nullptr, home.c_str(), SW_SHOWNORMAL);
+    if (reinterpret_cast<INT_PTR>(result) <= 32) {
+        std::cerr << "VEK install: Windows could not open the graphical installer (ShellExecute error "
+                  << reinterpret_cast<INT_PTR>(result) << ").\n";
+        return 3;
+    }
+    std::cout << "VEK graphical installer opened. Continue in the Windows installer window.\n";
+    return 0;
+#else
+    (void)home;
+    std::cerr << "VEK --install currently provides a native graphical installer on Windows only.\n";
+    return 2;
+#endif
+}
+
 int doctor(const fs::path& exe, const fs::path& home) {
     bool criticalOk = true;
     auto ok = [](const std::string& msg){ std::cout << "[OK] " << msg << "\n"; };
@@ -372,7 +422,7 @@ int doctor(const fs::path& exe, const fs::path& home) {
     else fail("VERSION mismatch: runtime=" + std::string(VEK_VERSION_STRING) + " disk=" + (diskVersion.empty() ? "<missing>" : diskVersion));
     fs::exists(home / "examples", ec) ? ok("examples directory") : warn("examples directory not present");
     fs::exists(home / "LICENSE", ec) ? ok("license file") : warn("LICENSE not present");
-    pathEnvironmentContains(home) ? ok("VEK home is on PATH") : warn("VEK home is not on PATH; run INSTALL_PATH.cmd on Windows");
+    pathEnvironmentContains(home) ? ok("VEK home is on PATH") : warn("VEK home is not on PATH; run vek --install, VekInstaller.exe, or INSTALL_PATH.cmd on Windows");
     fs::exists(home / "manifest.sha256", ec) ? ok("portable integrity manifest") : warn("manifest.sha256 not present (normal in source/development builds)");
 
     if (const char* env = std::getenv("VEK_HOME")) {
@@ -390,6 +440,7 @@ void usage() {
         << "VEK " << VEK_VERSION_STRING << "\n"
         << "Usage:\n"
         << "  vek --version              Show version\n"
+        << "  vek --install              Open the Windows graphical installer\n"
         << "  vek info                   Show portable install information\n"
         << "  vek home                   Print detected VEK home\n"
         << "  vek doctor                 Check installation/PATH\n"
@@ -409,6 +460,7 @@ int main(int argc, char** argv) {
     if (argc < 2) { usage(); return 0; }
     const std::string cmd = argv[1];
     if (cmd == "version" || cmd == "--version" || cmd == "-v") { std::cout << "VEK " << VEK_VERSION_STRING << "\n"; return 0; }
+    if (cmd == "install" || cmd == "--install") return launchGuiInstaller(home);
     if (cmd == "info") { printInfo(exe, home); return 0; }
     if (cmd == "home") { std::cout << home.string() << "\n"; return 0; }
     if (cmd == "doctor") return doctor(exe, home);

@@ -39,12 +39,13 @@ jobs:
           New-Item -ItemType Directory -Force -Path $root | Out-Null
 
           Copy-Item "stage/bin/vek.exe" "$root/vek.exe"
+          Copy-Item "stage/bin/VekInstaller.exe" "$root/VekInstaller.exe"
           if (Test-Path "stage/bin/vek.dll") { Copy-Item "stage/bin/vek.dll" "$root/vek.dll" }
           if (Test-Path "stage/lib") { Copy-Item "stage/lib" "$root/lib" -Recurse }
           Copy-Item "stage/include" "$root/include" -Recurse
           Copy-Item "examples" "$root/examples" -Recurse
           Copy-Item "docs" "$root/docs" -Recurse
-          Copy-Item "VERSION","LICENSE","README.md","PORTABLE_RELEASE.md","INSTALL_PATH.cmd","UNINSTALL_PATH.cmd" $root
+          Copy-Item "VERSION","LICENSE","README.md","PORTABLE_RELEASE.md","RELEASE_NOTES_V2.2.0.md","INSTALL_PATH.cmd","UNINSTALL_PATH.cmd" $root
 
           $files = Get-ChildItem $root -File -Recurse | Where-Object { $_.Name -ne 'manifest.sha256' } | Sort-Object FullName
           $lines = foreach ($f in $files) {
@@ -54,6 +55,7 @@ jobs:
           }
           $lines | Set-Content -Encoding ascii (Join-Path $root 'manifest.sha256')
 
+          if (-not (Test-Path "$root/VekInstaller.exe")) { throw "VekInstaller.exe was not packaged" }
           & "$root/vek.exe" --version
           & "$root/vek.exe" info
           & "$root/vek.exe" doctor

@@ -4,7 +4,7 @@
 
 VEK started as the secure gameplay scripting language for the Custom Vehicle Game, but the runtime is designed to be usable by other applications as well. It keeps one canonical language/runtime implementation and exposes safe host APIs instead of requiring every host language to reimplement VEK.
 
-Current version: **2.1.0**
+Current version: **2.2.0**
 
 ## What VEK is designed for
 
@@ -155,9 +155,13 @@ println(wheels[1]);
 println(engine.power);
 ```
 
-## Portable Windows release
+## Portable Windows release and GUI installer
 
-VEK 2.1 adds a relocatable Windows distribution. Normal users do not need Git, CMake or a traditional installer. Download the Windows portable ZIP, extract it anywhere (for example `C:\vek`), run `INSTALL_PATH.cmd`, open a new terminal, then run:
+VEK 2.2 keeps the relocatable Windows distribution and adds a native graphical installer. Normal users do not need Git, CMake or Visual Studio. Download the Windows portable ZIP and extract it. For first-time setup, double-click `VekInstaller.exe` or run `vek.exe --install` from the extracted folder. Once VEK is on PATH, `vek --install` can reopen the graphical installer.
+
+The installer shows quick-install, custom-folder and use-this-folder choices and can add the selected VEK folder to the Windows User PATH. The `INSTALL_PATH.cmd` helper remains available as a fallback.
+
+After setup, open a new terminal and run:
 
 ```bat
 vek --version
@@ -167,7 +171,7 @@ vek doctor
 
 The folder can be renamed or moved. VEK discovers its home from `vek.exe`; `VEK_HOME` is optional. `vek verify` validates package files against the release-generated local SHA-256 manifest. See `docs/PORTABLE_INSTALL.md`.
 
-Release details are in `RELEASE_NOTES_V2.1.0.md`.
+Release details are in `RELEASE_NOTES_V2.2.0.md`.
 
 ## Build
 
@@ -190,6 +194,7 @@ BUILD_WINDOWS.bat
 Examples:
 
 ```bash
+vek --install
 vek run examples/hello.vek
 vek check examples/hello.vek
 vek eval "(10 + 5) * 2"

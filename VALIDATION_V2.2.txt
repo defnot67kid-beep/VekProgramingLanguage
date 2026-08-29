@@ -1,0 +1,17 @@
+VEK 2.2.0 validation
+=====================
+
+Validated in this packaging environment:
+- CMake configure: PASS (Linux host; Windows-only GUI target correctly excluded)
+- VEK runtime/CLI compile: PASS
+- VEK test suite: 7/7 PASS
+- vek --version: PASS (2.2.0)
+- vek --help: PASS and lists vek --install
+- vek --install handoff path on non-Windows: PASS (ASCII + 1 - 2 - 3 + Installing VEK..., then expected Windows-only diagnostic)
+- release workflow updated to require/package VekInstaller.exe on Windows
+- portable build script updated to package VekInstaller.exe
+
+Windows-specific note:
+- VekInstaller.exe is native Win32/TaskDialog source and is built by the Windows GitHub Actions release job.
+- This Linux sandbox does not have the Windows SDK/MSVC, so the Windows GUI target itself could not be compiled here.
+- The GitHub release job must pass before publishing the v2.2.0 Windows binary asset.
