@@ -4,6 +4,45 @@ This file is the single version history for VEK. New release notes and feature a
 
 ---
 
+
+## VEK 1.6.0
+
+### Responsive GUI layout and physical interaction policy
+
+VEK 1.6 upgrades the renderer-neutral UI and access-control SDK so hosts can build interfaces that remain readable across different window sizes and can enforce physical interaction rules without exposing unsafe renderer or world pointers.
+
+New GUI features:
+
+- `GuiTextPolicy`
+- `GuiTextLayoutSystem`
+- automatic font shrinking
+- configurable minimum and maximum font sizes
+- word wrapping
+- maximum-line limits
+- ellipsis for truncated content
+- text clipping policy
+- configurable line height
+- left / centre / right text alignment metadata
+- responsive style width/height constraints
+- text policy inheritance through VEK GUI styles
+- VEK style fields such as `font_size`, `min_font_size`, `max_font_size`, `auto_fit`, `wrap`, `ellipsis`, `clip_text`, `max_lines`, `line_height` and `text_align`
+
+Garage/access additions:
+
+- inside-egress policy for garage doors
+- configurable inside auto-open distance
+- hold-open-near-door policy
+- `GarageDoorSystem::HoldOpen`
+- passlock maximum use distance
+- passlock line-of-sight requirement
+- outside-only passlock policy
+- click-only passlock policy
+- optional world-prompt visibility metadata
+
+The native host still performs actual collision queries, line-of-sight ray tests, text measurement, drawing and mouse hit testing. VEK only defines safe rules and layout policy.
+
+---
+
 ## VEK 1.5.0
 
 ### Garage doors, passlocks and access-control UI

@@ -1,5 +1,6 @@
 #pragma once
 #include <cstdint>
+#include <functional>
 #include <string>
 #include <unordered_map>
 #include <vector>
@@ -104,6 +105,9 @@ struct GarageDoorDefinition {
     float autoCloseDelay=8.0f;
     bool startsLocked=true;
     bool autoClose=true;
+    bool allowInsideEgress=true;
+    float insideOpenDistance=6.0f;
+    bool holdOpenNearDoor=true;
     std::string openAnimation;
     std::string closeAnimation;
     std::string accessId;
@@ -133,6 +137,7 @@ public:
     static void Reset(GarageDoorState& state,const GarageDoorDefinition& definition);
     static bool RequestOpen(GarageDoorState& state,const GarageDoorDefinition& definition,bool accessGranted);
     static void RequestClose(GarageDoorState& state);
+    static void HoldOpen(GarageDoorState& state,const GarageDoorDefinition& definition);
     static void Unlock(GarageDoorState& state);
     static void Lock(GarageDoorState& state);
     static void Update(GarageDoorState& state,const GarageDoorDefinition& definition,float dt);
@@ -145,6 +150,11 @@ struct PasslockDefinition {
     std::string accessCode;
     std::string linkedGarageId;
     std::string promptId;
+    float maxUseDistance=4.5f;
+    bool requiresLineOfSight=true;
+    bool outsideOnly=true;
+    bool showWorldPrompt=false;
+    bool clickOnly=true;
     int minDigits=4;
     int maxDigits=8;
     int maxAttempts=5;
@@ -182,15 +192,55 @@ enum class GuiCommandType{
 };
 struct GuiRect{float x=0,y=0,width=0,height=0;};
 struct GuiColor{float r=0,g=0,b=0,a=255;};
-struct GuiStyle{float scale=1,opacity=1,cornerRadius=8,padding=10,spacing=6;GuiColor background{18,27,33,245},foreground{235,242,244,255},accent{57,174,188,255},border{74,102,110,255};};
-struct GuiCommand{GuiCommandType type=GuiCommandType::Label;std::string id,text,styleId,aux;GuiRect rect;float value=0,minValue=0,maxValue=1;bool checked=false,enabled=true;int columns=1;std::vector<std::string>items;};
+
+enum class GuiTextAlign { Left=0, Center, Right };
+struct GuiTextPolicy {
+    float fontSize=18.0f;
+    float minFontSize=10.0f;
+    float maxFontSize=24.0f;
+    float lineHeight=1.15f;
+    int maxLines=2;
+    bool autoFit=true;
+    bool wrap=true;
+    bool ellipsis=true;
+    bool clip=true;
+    GuiTextAlign align=GuiTextAlign::Left;
+};
+struct GuiTextLayoutResult {
+    float fontSize=18.0f;
+    std::vector<std::string> lines;
+    bool truncated=false;
+};
+using GuiMeasureTextFn=std::function<float(const std::string&,float)>;
+class GuiTextLayoutSystem {
+public:
+    static GuiTextLayoutResult Layout(const std::string& text,float width,float height,const GuiTextPolicy& policy,const GuiMeasureTextFn& measure);
+};
+
+struct GuiStyle{
+    float scale=1,opacity=1,cornerRadius=8,padding=10,spacing=6;
+    float minWidth=0,maxWidth=0,minHeight=0,maxHeight=0;
+    bool responsive=true;
+    GuiTextPolicy text;
+    GuiColor background{18,27,33,245},foreground{235,242,244,255},accent{57,174,188,255},border{74,102,110,255};
+};
+struct GuiCommand{
+    GuiCommandType type=GuiCommandType::Label;
+    std::string id,text,styleId,aux;
+    GuiRect rect;
+    GuiTextPolicy textPolicy;
+    float value=0,minValue=0,maxValue=1;
+    bool checked=false,enabled=true;
+    int columns=1;
+    std::vector<std::string>items;
+};
 class GuiSystem{
 public:
  void BeginFrame();void EndFrame();void SetStyle(const GuiStyle&);const GuiStyle&GetStyle()const;void DefineStyle(const std::string&,const GuiStyle&);const GuiStyle*FindStyle(const std::string&)const;
  void BeginWindow(const std::string&,const std::string&,GuiRect={},const std::string&style={});void EndWindow();void BeginModal(const std::string&,const std::string&,GuiRect={},const std::string&style={});void EndModal();void BeginPanel(const std::string&,GuiRect={},const std::string&style={});void EndPanel();
  void BeginDockPanel(const std::string&,GuiRect={},const std::string&style={});void EndDockPanel();void BeginScrollPanel(const std::string&,GuiRect={},const std::string&style={});void EndScrollPanel();void BeginGrid(const std::string&,int columns,GuiRect={},const std::string&style={});void EndGrid();void BeginHorizontal(const std::string&,const std::string&style={});void EndHorizontal();void BeginVertical(const std::string&,const std::string&style={});void EndVertical();void BeginTabs(const std::string&,const std::vector<std::string>&,const std::string&style={});void EndTabs();void BeginTree(const std::string&,const std::string&,const std::string&style={});void EndTree();void BeginList(const std::string&,const std::string&style={});void EndList();void BeginContextMenu(const std::string&,GuiRect={},const std::string&style={});void EndContextMenu();void BeginPropertyGrid(const std::string&,const std::string&style={});void EndPropertyGrid();
  void Label(const std::string&,GuiRect={},const std::string&style={});bool Button(const std::string&,const std::string&,GuiRect={},const std::string&style={});bool ImageButton(const std::string&,const std::string&,const std::string&,GuiRect={},const std::string&style={});bool Checkbox(const std::string&,const std::string&,bool,GuiRect={},const std::string&style={});float Slider(const std::string&,const std::string&,float,float,float,GuiRect={},const std::string&style={});void ProgressBar(const std::string&,float,float,float,GuiRect={},const std::string&style={});std::string TextInput(const std::string&,const std::string&,GuiRect={},const std::string&style={});std::string PasswordInput(const std::string&,const std::string&,GuiRect={},const std::string&style={});std::string SearchBox(const std::string&,const std::string&,GuiRect={},const std::string&style={});int ComboBox(const std::string&,const std::vector<std::string>&,int,GuiRect={},const std::string&style={});int Dropdown(const std::string&,const std::vector<std::string>&,int,GuiRect={},const std::string&style={});void StatusBadge(const std::string&,const std::string&,const std::string&status,GuiRect={},const std::string&style={});void Keypad(const std::string&,const std::vector<std::string>&,GuiRect={},const std::string&style={});void Tooltip(const std::string&,const std::string&);void Separator();void Spacer(float);
- void SetPressed(const std::string&,bool);void SetValue(const std::string&,float);void SetText(const std::string&,std::string);void SetIndex(const std::string&,int);const std::vector<GuiCommand>&Commands()const;void RegisterNatives(VekScriptEngine&);
+ void SetPressed(const std::string&,bool);void SetValue(const std::string&,float);void SetText(const std::string&,std::string);void SetIndex(const std::string&,int);const std::vector<GuiCommand>&Commands()const;GuiTextPolicy ResolveTextPolicy(const std::string& styleId)const;void RegisterNatives(VekScriptEngine&);
 private:GuiStyle style;std::unordered_map<std::string,GuiStyle>styles;std::vector<GuiCommand>commands;std::unordered_map<std::string,bool>pressed;std::unordered_map<std::string,float>values;std::unordered_map<std::string,std::string>texts;std::unordered_map<std::string,int>indices;
 };
 void VekRegisterGameplayLibrary(VekScriptEngine&engine);

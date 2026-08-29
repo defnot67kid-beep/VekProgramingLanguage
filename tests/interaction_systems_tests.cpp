@@ -36,21 +36,21 @@ int main(){
     vek::GarageDoorRegistry garages;
     VekValue garage=VekValue::Map();
     garage.Set("id","hangar.main"); garage.Set("width",24.0); garage.Set("height",8.0);
-    garage.Set("panel_count",8); garage.Set("starts_locked",true); garage.Set("open_duration",2.0);
+    garage.Set("panel_count",8); garage.Set("starts_locked",true); garage.Set("open_duration",2.0); garage.Set("allow_inside_egress",true); garage.Set("inside_open_distance",6.0);
     assert(garages.RegisterGarageValue(garage,&error));
     const auto* gd=garages.Find("hangar.main"); assert(gd);
     vek::GarageDoorState gs; vek::GarageDoorSystem::Reset(gs,*gd);
     assert(!vek::GarageDoorSystem::RequestOpen(gs,*gd,false));
     assert(vek::GarageDoorSystem::RequestOpen(gs,*gd,true));
     for(int i=0;i<25;++i) vek::GarageDoorSystem::Update(gs,*gd,0.1f);
-    assert(gs.openFraction>0.99f);
+    assert(gs.openFraction>0.99f); vek::GarageDoorSystem::HoldOpen(gs,*gd); assert(gs.autoCloseTimer>0.0f);
 
     vek::PasslockRegistry locks;
     VekValue lock=VekValue::Map();
     lock.Set("id","hangar.access"); lock.Set("display_name","Engineering Access");
-    lock.Set("code","2580"); lock.Set("garage_id","hangar.main"); lock.Set("max_attempts",3);
+    lock.Set("code","2580"); lock.Set("garage_id","hangar.main"); lock.Set("max_attempts",3); lock.Set("max_use_distance",4.5); lock.Set("outside_only",true); lock.Set("show_world_prompt",false); lock.Set("click_only",true);
     assert(locks.RegisterPasslockValue(lock,&error));
-    const auto* ld=locks.Find("hangar.access"); assert(ld);
+    const auto* ld=locks.Find("hangar.access"); assert(ld); assert(ld->clickOnly&&ld->outsideOnly&&!ld->showWorldPrompt&&ld->requiresLineOfSight);
     vek::PasslockState ls;
     assert(vek::PasslockSystem::Submit(ls,*ld,"1111")==vek::PasslockResult::Denied);
     assert(vek::PasslockSystem::Submit(ls,*ld,"2580")==vek::PasslockResult::Granted);
@@ -61,6 +61,19 @@ int main(){
     bool sawModal=false,sawPassword=false,sawKeypad=false;
     for(const auto&c:gui.Commands()){sawModal|=c.type==vek::GuiCommandType::BeginModal;sawPassword|=c.type==vek::GuiCommandType::PasswordInput;sawKeypad|=c.type==vek::GuiCommandType::Keypad;}
     assert(sawModal&&sawPassword&&sawKeypad);
+
+    vek::GuiTextPolicy textPolicy;
+    textPolicy.fontSize=24.0f; textPolicy.minFontSize=10.0f; textPolicy.maxLines=2;
+    textPolicy.autoFit=true; textPolicy.wrap=true; textPolicy.ellipsis=true; textPolicy.clip=true;
+    auto layout=vek::GuiTextLayoutSystem::Layout(
+        "Engineering garage access status text that must stay inside its panel",
+        180.0f, 44.0f, textPolicy,
+        [](const std::string& t,float fs){ return (float)t.size()*fs*0.52f; });
+    assert(layout.fontSize<=24.0f&&layout.fontSize>=10.0f);
+    assert(!layout.lines.empty()&&layout.lines.size()<=2);
+    vek::GuiStyle fittedStyle; fittedStyle.text=textPolicy; gui.DefineStyle("fit",fittedStyle);
+    gui.BeginFrame(); gui.Label("A long label that must fit",{0,0,120,30},"fit"); gui.EndFrame();
+    assert(!gui.Commands().empty()&&gui.Commands()[0].textPolicy.autoFit&&gui.Commands()[0].textPolicy.maxLines==2);
 
     VekScriptEngine vm; VekRegisterStandardLibrary(vm);
     animations.RegisterNatives(vm); prompts.RegisterNatives(vm); garages.RegisterNatives(vm); locks.RegisterNatives(vm); gui.RegisterNatives(vm);
@@ -76,6 +89,6 @@ int main(){
     )","interaction_test.vek"));
     auto value=vm.Call("setup");
     assert(value.AsNumber()>5.9);
-    std::cout<<"VEK animation + proximity prompt tests: PASS\n";
+    std::cout<<"VEK interaction + responsive GUI tests: PASS\n";
     return 0;
 }
