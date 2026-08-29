@@ -32,6 +32,7 @@ if exist "%STAGE_DIR%\bin\VekInstaller.exe" copy /y "%STAGE_DIR%\bin\VekInstalle
 if exist "%STAGE_DIR%\bin\vek.dll" copy /y "%STAGE_DIR%\bin\vek.dll" "%PKG_DIR%\vek.dll" >nul
 if exist "%STAGE_DIR%\lib" xcopy /e /i /y "%STAGE_DIR%\lib" "%PKG_DIR%\lib" >nul
 xcopy /e /i /y "%STAGE_DIR%\include" "%PKG_DIR%\include" >nul
+if exist "%STAGE_DIR%\share" xcopy /e /i /y "%STAGE_DIR%\share" "%PKG_DIR%\share" >nul
 xcopy /e /i /y "examples" "%PKG_DIR%\examples" >nul
 xcopy /e /i /y "docs" "%PKG_DIR%\docs" >nul
 for %%F in (VERSION LICENSE README.md PORTABLE_RELEASE.md RELEASE_NOTES_V2.2.0.md INSTALL_PATH.cmd UNINSTALL_PATH.cmd) do copy /y "%%F" "%PKG_DIR%\%%F" >nul

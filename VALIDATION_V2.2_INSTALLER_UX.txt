@@ -1,0 +1,12 @@
+VEK 2.2 Installer UX validation
+Date: 2026-08-29
+
+PASS - VEK 2.2 runtime builds on Linux test host.
+PASS - 7/7 VEK automated tests pass.
+PASS - tools/installer/installer_ui.vek parses with VEK 2.2.
+PASS - VEK installer UI runtime smoke test generates GuiSystem commands.
+PASS - VEK installer UI returns the expected "install" action when its VEK button is pressed.
+PASS - completion state generates its VEK-driven success/countdown UI.
+PASS - VEK version header macros now consistently report major=2 minor=2 patch=0, string=2.2.0.
+
+Windows-specific VekInstaller.exe is built by the Windows Server 2022 GitHub Actions workflow using MSVC. This Linux sandbox does not contain the Windows SDK/MSVC, so the native Win32 host itself cannot be linked here. The workflow packages share/vek/installer_ui.vek and fails packaging if the installer executable is absent.

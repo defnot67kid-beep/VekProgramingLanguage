@@ -47,7 +47,7 @@ endif()
 
 if(WIN32 AND VEK_BUILD_CLI AND VEK_BUILD_INSTALLER)
     add_executable(vek_installer WIN32 tools/installer/main.cpp)
-    target_link_libraries(vek_installer PRIVATE comctl32 ole32 shell32 advapi32)
+    target_link_libraries(vek_installer PRIVATE VEK::Runtime ole32 shell32 advapi32 gdi32 user32)
     set_target_properties(vek_installer PROPERTIES OUTPUT_NAME "VekInstaller")
 endif()
 
@@ -103,5 +103,6 @@ install(EXPORT VEKTargets FILE VEKTargets.cmake NAMESPACE VEK:: DESTINATION ${CM
 
 # Files installed for relocatable/portable distributions.
 install(FILES VERSION LICENSE README.md PORTABLE_RELEASE.md RELEASE_NOTES_V2.2.0.md INSTALL_PATH.cmd UNINSTALL_PATH.cmd BUILD_PORTABLE_WINDOWS.bat DESTINATION .)
+install(FILES tools/installer/installer_ui.vek DESTINATION share/vek)
 install(DIRECTORY examples/ DESTINATION examples)
 install(DIRECTORY docs/ DESTINATION docs)

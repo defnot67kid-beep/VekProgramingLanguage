@@ -290,3 +290,7 @@ All release notes and feature updates are kept in **`Versions.md`**.
 ## License
 
 VEK is released under the MIT License. See `LICENSE`.
+
+## Hacker-style `vek --install`
+
+VEK 2.2's Windows install flow now detects existing VEK installs, animates the VEK ASCII logo from slow to fast, and opens a custom VEK-driven graphical installer. The GUI is authored in `share/vek/installer_ui.vek` and rendered by the native Windows host. Installation displays ten progress stages and auto-closes five seconds after success.

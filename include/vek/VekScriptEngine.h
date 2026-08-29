@@ -10,7 +10,7 @@
 #include <vector>
 
 #define VEK_VERSION_MAJOR 2
-#define VEK_VERSION_MINOR 1
+#define VEK_VERSION_MINOR 2
 #define VEK_VERSION_PATCH 0
 #define VEK_VERSION_STRING "2.2.0"
 

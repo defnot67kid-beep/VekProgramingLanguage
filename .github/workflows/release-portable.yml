@@ -43,6 +43,7 @@ jobs:
           if (Test-Path "stage/bin/vek.dll") { Copy-Item "stage/bin/vek.dll" "$root/vek.dll" }
           if (Test-Path "stage/lib") { Copy-Item "stage/lib" "$root/lib" -Recurse }
           Copy-Item "stage/include" "$root/include" -Recurse
+          if (Test-Path "stage/share") { Copy-Item "stage/share" "$root/share" -Recurse }
           Copy-Item "examples" "$root/examples" -Recurse
           Copy-Item "docs" "$root/docs" -Recurse
           Copy-Item "VERSION","LICENSE","README.md","PORTABLE_RELEASE.md","RELEASE_NOTES_V2.2.0.md","INSTALL_PATH.cmd","UNINSTALL_PATH.cmd" $root
